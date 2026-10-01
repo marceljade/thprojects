@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --canvas: 245 246 244;
+  --surface: 255 255 255;
+  --raised: 250 250 249;
+  --line: 226 229 226;
+  --ink: 28 31 34;
+  --muted: 94 102 112;
+  --faint: 154 163 171;
+  --accent: 15 92 102;
+  --accent-ink: 255 255 255;
+  --rot: 200 50 43;
+  --orange: 217 122 31;
+  --gelb: 190 150 30;
+  --gruen: 61 138 82;
+  --blau: 47 107 176;
+  color-scheme: light;
+}
+
+.dark {
+  --canvas: 21 24 28;
+  --surface: 28 32 37;
+  --raised: 34 39 45;
+  --line: 46 52 59;
+  --ink: 232 234 230;
+  --muted: 154 163 171;
+  --faint: 107 115 124;
+  --accent: 79 179 191;
+  --accent-ink: 12 26 29;
+  --rot: 226 91 82;
+  --orange: 232 162 74;
+  --gelb: 217 184 74;
+  --gruen: 91 179 114;
+  --blau: 111 163 224;
+  color-scheme: dark;
+}
+
+html, body, #root { height: 100%; }
+body {
+  @apply bg-canvas text-ink font-sans antialiased;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+* { @apply border-line; }
+
+::selection { background: rgb(var(--accent) / 0.18); }
+
+*:focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; border-radius: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* Scrollbars dezent */
+* { scrollbar-width: thin; scrollbar-color: rgb(var(--faint) / 0.5) transparent; }
+
+@layer components {
+  .card { @apply bg-surface border rounded-lg; }
+  .input {
+    @apply w-full h-9 px-3 rounded-md border bg-surface text-ink placeholder:text-faint
+           focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none transition-colors;
+  }
+  .input-area { @apply input h-auto py-2 leading-relaxed resize-y min-h-[72px]; }
+  .label { @apply block text-[12px] text-muted mb-1; }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-md text-[13px] font-medium
+           border transition-colors select-none whitespace-nowrap disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary { @apply btn bg-accent text-accent-ink border-accent hover:bg-accent/90; }
+  .btn-ghost { @apply btn border-transparent text-muted hover:text-ink hover:bg-raised; }
+  .btn-outline { @apply btn bg-surface text-ink hover:bg-raised; }
+  .btn-danger { @apply btn bg-surface text-rot border-rot/30 hover:bg-rot/10; }
+  .btn-sm { @apply h-7 px-2.5 text-[12px]; }
+  .btn-icon { @apply btn-ghost w-9 px-0; }
+  .chip {
+    @apply inline-flex items-center h-7 px-2.5 rounded-full border text-[12px] text-muted bg-surface
+           hover:text-ink hover:border-faint transition-colors;
+  }
+  .chip-on { @apply chip bg-ink text-canvas border-ink hover:text-canvas hover:border-ink; }
+  .page { @apply w-full px-4 py-3 sm:px-5 sm:py-4; }
+  .page-narrow { @apply page max-w-[1240px] mx-auto; }
+  .h1 { @apply text-[22px] font-semibold tracking-tight; }
+  .h2 { @apply text-[15px] font-semibold; }
+  .kbd { @apply inline-block px-1.5 py-0.5 rounded border text-[11px] text-muted bg-raised font-sans; }
+  .row-hover { @apply hover:bg-raised transition-colors; }
+  .rail { @apply absolute left-0 top-2 bottom-2 w-[3px] rounded-full; }
+}

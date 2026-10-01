@@ -1,0 +1,16 @@
+# Echte Daten des Nutzers, nie ins Repo
+backend/data/
+*.db
+*.db-wal
+*.db-shm
+
+# Umgebungen und Abhängigkeiten
+backend/.venv/
+frontend/node_modules/
+
+# Zwischenstände
+shots/
+__pycache__/
+.pytest_cache/
+
+# backend/static bleibt im Repo (gebautes Frontend, wird vom Backend ausgeliefert)
