@@ -17,6 +17,8 @@ Beim ersten Öffnen ist die Datenbank leer. Reihenfolge, die sich bewährt: Eins
 
 `n` neue Aufgabe · `p` neues Projekt · `/` Suche · `Esc` schließt Dialoge · in Notizfeldern `Strg+Enter` speichert.
 
+In jedes Datumsfeld kannst du ein Datum aus der Zwischenablage einfügen (`Strg+V`), z. B. `15.10.2026`, `15.10.26` oder `2026-10-15`. Was kein Datum ist, wird mit Hinweis abgelehnt.
+
 ## Was wo liegt
 
 | Pfad | Inhalt |
@@ -47,10 +49,9 @@ Beim ersten Öffnen ist die Datenbank leer. Reihenfolge, die sich bewährt: Eins
 Ordner heißen `<Basispfad>\20JJ\<Projektnr> <Anfrage|Auftrag> <Projektname>`, zum Beispiel `…\2024\24-019 Auftrag Schall Schatten WP Neuscharrel, LK Cloppenburg`.
 
 - **Pfad einfügen**: gibt es den Ordner schon, kannst du im Formular „Neues Projekt" als Erstes den Pfad ins Feld Projektordner einfügen. Projektnummer, Projektname und Status (Anfrage oder Beauftragt) werden daraus übernommen, aber nur in Felder, die noch leer sind. Die Rückmeldung sagt, was übernommen wurde.
-- **Anlegen**: beim Anlegen eines Projekts wird der Ordner mit der passenden Phase erstellt (abschaltbar in den Einstellungen oder per Haken im Formular). Gibt es im Jahresordner schon einen Ordner, der mit der Projektnummer beginnt, wird der übernommen und nicht neu angelegt.
-- **Phase**: „Anfrage" bei Status Anfrage und Angebot erstellt, „Auftrag" ab Beauftragt. Sobald die Phase wechselt (Status geändert oder Auftragsdatum eingetragen), wird im vorhandenen Ordnernamen nur das Phasenwort ersetzt, der restliche Name bleibt wie er ist. Das passiert einmal, nicht bei jedem weiteren Statuswechsel.
-- **Abgleichen**: weicht der Ordnername von `<Nr> <Phase> <Name>` ab (z. B. nach einer Umbenennung des Projekts), zeigt die Projektseite den Button „Ordner abgleichen". Der benennt um oder legt an, immer mit Rückmeldung.
-- Ist das NAS nicht erreichbar, passiert nichts Stilles: die App merkt sich den neuen Pfad und meldet, dass der Ordner nicht erreichbar war.
+- **Suchen**: bleibt das Feld leer, sucht die App beim Anlegen im Jahresordner des Basispfads nach einem Ordner, der mit der Projektnummer beginnt, und übernimmt ihn. Die Rückmeldung sagt, welcher Ordner übernommen wurde.
+- **Öffnen**: „Projektordner öffnen" auf der Projektseite öffnet den hinterlegten Ordner im Explorer. Ist keiner hinterlegt, wird einmal im Basispfad gesucht.
+- Die App legt nie Ordner an und benennt nie welche um, auch nicht beim Wechsel von Anfrage zu Auftrag. Der Ablageort ist das NAS, dort ändert nur der Nutzer selbst etwas. Passt der hinterlegte Pfad nicht mehr, trägst du ihn über „Bearbeiten" neu ein.
 
 ## Update auf eine neue Version – Daten behalten
 

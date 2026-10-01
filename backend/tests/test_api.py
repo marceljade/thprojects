@@ -104,45 +104,39 @@ def test_flow(client):
 
 
 def test_folders(client, tmp_path):
+    """Die App liest nur: vorhandenen Ordner finden, nie anlegen, nie umbenennen."""
     base = tmp_path / "nas"
     (base / "2026").mkdir(parents=True)
     (base / "2026" / "26-400 Anfrage Alt vorhandener Ordner").mkdir()
     r = client.put("/api/settings", json={"base_path": str(base)})
-    assert r.json()["auto_rename_folder"] is True
+    assert r.status_code == 200 and "auto_create_folder" not in r.json()
 
-    # vorhandener Ordner wird gefunden, nicht neu angelegt
+    # vorhandener Ordner wird gefunden und übernommen
     r = client.post("/api/projects", json={"project_number": "26-400", "name": "Neu", "status": "anfrage"})
     assert r.json()["folder_path"].endswith("26-400 Anfrage Alt vorhandener Ordner")
-    assert r.json()["folder_matches"] is False and r.json()["expected_folder_name"] == "26-400 Anfrage Neu"
+    assert "übernommen" in r.json()["folder_note"]
 
-    # Phasenwechsel -> Umbenennung nur des Phasenworts
+    # Phasenwechsel: Ordner bleibt, Pfad bleibt, kein Hinweis
     r = client.put(f"/api/projects/{r.json()['id']}", json={"status": "in_bearbeitung"})
-    assert r.json()["folder_path"].endswith("26-400 Auftrag Alt vorhandener Ordner"), r.json()["folder_path"]
-    assert (base / "2026" / "26-400 Auftrag Alt vorhandener Ordner").is_dir()
-    assert "umbenannt" in r.json()["folder_note"]
+    assert r.json()["folder_path"].endswith("26-400 Anfrage Alt vorhandener Ordner")
+    assert (base / "2026" / "26-400 Anfrage Alt vorhandener Ordner").is_dir()
+    assert r.json()["folder_note"] is None
 
-    # neues Projekt: Ordner wird angelegt, Sonderzeichen bereinigt
+    # neues Projekt ohne vorhandenen Ordner: nichts wird angelegt
     r = client.post("/api/projects", json={"project_number": "26-401", "name": "WP Test: Nord/Süd?", "status": "anfrage"})
     p = r.json()
-    assert (base / "2026" / "26-401 Anfrage WP Test Nord Süd").is_dir(), p["folder_path"]
-    assert p["folder_matches"] is True and "angelegt" in p["folder_note"]
-    # Auftragsdatum -> Beauftragt -> Auftrag
+    assert p["folder_path"] == "" and p["folder_note"] is None
+    assert sorted(e.name for e in (base / "2026").iterdir()) == ["26-400 Anfrage Alt vorhandener Ordner"]
     r = client.put(f"/api/projects/{p['id']}", json={"order_date": "2026-10-05", "offered_weeks": 4})
-    assert r.json()["status"] == "beauftragt" and (base / "2026" / "26-401 Auftrag WP Test Nord Süd").is_dir()
-    # Name geändert -> Abgleich per Button
-    r = client.put(f"/api/projects/{p['id']}", json={"name": "WP Test Nord"})
-    assert r.json()["folder_matches"] is False
-    r = client.post(f"/api/projects/{p['id']}/sync-folder")
-    assert r.json()["ok"] and (base / "2026" / "26-401 Auftrag WP Test Nord").is_dir()
-    assert client.get(f"/api/projects/{p['id']}").json()["folder_matches"] is True
+    assert r.json()["status"] == "beauftragt"
+    assert sorted(e.name for e in (base / "2026").iterdir()) == ["26-400 Anfrage Alt vorhandener Ordner"]
+    assert client.post(f"/api/projects/{p['id']}/sync-folder").status_code in (404, 405)
 
-    # Projekt ohne Ordner und ohne Anlegen
-    r = client.post("/api/projects", json={"project_number": "26-402", "name": "Ohne", "create_folder": False})
-    assert r.json()["folder_path"] == ""
-    # Basispfad nicht erreichbar -> Hinweis statt Fehler
+    # eigener Pfad bleibt unverändert, Basispfad nicht erreichbar ist kein Fehler
     client.put("/api/settings", json={"base_path": str(tmp_path / "gibtsnicht")})
-    r = client.post("/api/projects", json={"project_number": "26-403", "name": "X"})
-    assert r.status_code == 201 and "nicht erreichbar" in r.json()["folder_note"]
+    r = client.post("/api/projects", json={"project_number": "26-403", "name": "X", "folder_path": "Z:\\irgendwo\\26-403 Auftrag X"})
+    assert r.status_code == 201 and r.json()["folder_path"] == "Z:\\irgendwo\\26-403 Auftrag X" and r.json()["folder_note"] is None
+    assert not any("Projektordner" in e["action"] for e in client.get("/api/activity").json())
 
 
 def test_migration(tmp_path):

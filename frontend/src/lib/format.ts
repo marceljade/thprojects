@@ -17,6 +17,22 @@ export function toIso(d: Date): string {
 
 export function todayIso(): string { return toIso(new Date()) }
 
+/** Datum aus eingefügtem Text: 15.10.2026, 15.10.26, 15.10. (aktuelles Jahr), 2026-10-15, 15/10/2026. Liefert ISO oder null. */
+export function parsePastedDate(text: string): string | null {
+  const t = (text ?? '').trim()
+  let y = 0, m = 0, d = 0
+  let r: RegExpMatchArray | null
+  if ((r = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s].*)?$/))) { y = +r[1]; m = +r[2]; d = +r[3] }
+  else if ((r = t.match(/^(\d{1,2})[./](\d{1,2})(?:[./](\d{2}|\d{4}))?\.?$/))) {
+    d = +r[1]; m = +r[2]
+    y = r[3] === undefined ? new Date().getFullYear() : r[3].length === 2 ? 2000 + +r[3] : +r[3]
+  } else return null
+  if (m < 1 || m > 12 || d < 1 || d > 31 || y < 1990 || y > 2100) return null
+  const dt = new Date(y, m - 1, d)
+  if (dt.getMonth() !== m - 1 || dt.getDate() !== d) return null
+  return toIso(dt)
+}
+
 export function fmtDate(s: string | null | undefined, opts: { year?: boolean; weekday?: boolean } = {}): string {
   const d = parseDate(s)
   if (!d) return '–'

@@ -21,8 +21,8 @@ export default function Settings() {
   const meta = useMeta().data
   const toast = useToast()
   const save = useSaveSettings()
-  const [s, setS] = useState({ my_user_id: '', base_path: '', warn_workdays: 3, warn_project_workdays: 5, auto_backup: true, auto_create_folder: true, auto_rename_folder: true, dashboard_widgets: {} as Record<string, boolean> })
-  useEffect(() => { if (meta) setS({ my_user_id: meta.settings.my_user_id ? String(meta.settings.my_user_id) : '', base_path: meta.settings.base_path, warn_workdays: meta.settings.warn_workdays, warn_project_workdays: meta.settings.warn_project_workdays, auto_backup: meta.settings.auto_backup, auto_create_folder: meta.settings.auto_create_folder, auto_rename_folder: meta.settings.auto_rename_folder, dashboard_widgets: meta.settings.dashboard_widgets }) }, [meta])
+  const [s, setS] = useState({ my_user_id: '', base_path: '', warn_workdays: 3, warn_project_workdays: 5, auto_backup: true, dashboard_widgets: {} as Record<string, boolean> })
+  useEffect(() => { if (meta) setS({ my_user_id: meta.settings.my_user_id ? String(meta.settings.my_user_id) : '', base_path: meta.settings.base_path, warn_workdays: meta.settings.warn_workdays, warn_project_workdays: meta.settings.warn_project_workdays, auto_backup: meta.settings.auto_backup, dashboard_widgets: meta.settings.dashboard_widgets }) }, [meta])
   const persist = (patch: Record<string, unknown>) => save.mutate(patch, { onSuccess: () => toast('Gespeichert'), onError: (e) => toast(e.message, 'error') })
 
   return (
@@ -34,13 +34,9 @@ export default function Settings() {
             <Field label="Ich bin" hint="bestimmt „Meine Aufgaben“ und den Standard-Bearbeiter">
               <Select value={s.my_user_id} onChange={(v) => { setS({ ...s, my_user_id: v }); persist({ my_user_id: Number(v) }) }} options={(meta?.users ?? []).map((u) => ({ value: u.id, label: u.name ? `${u.code} – ${u.name}` : u.code }))} />
             </Field>
-            <Field label="Basispfad der Projektordner" hint={<>Ordner heißen <span className="text-ink">{'<Nr> <Anfrage|Auftrag> <Projektname>'}</span> im Jahresordner, z. B. 2026\26-301 Auftrag WP Testfeld</>}>
+            <Field label="Basispfad der Projektordner" hint={<>Ordner heißen <span className="text-ink">{'<Nr> <Anfrage|Auftrag> <Projektname>'}</span> im Jahresordner, z. B. 2026\26-301 Auftrag WP Testfeld. Die App sucht und öffnet Ordner nur, sie legt keine an und benennt keine um.</>}>
               <input className="input" value={s.base_path} onChange={(e) => setS({ ...s, base_path: e.target.value })} onBlur={() => persist({ base_path: s.base_path })} />
             </Field>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-              <label className="flex items-center gap-2 text-[13px]"><input type="checkbox" checked={s.auto_create_folder} onChange={(e) => { setS({ ...s, auto_create_folder: e.target.checked }); persist({ auto_create_folder: e.target.checked }) }} />Ordner beim Anlegen eines Projekts erstellen</label>
-              <label className="flex items-center gap-2 text-[13px]"><input type="checkbox" checked={s.auto_rename_folder} onChange={(e) => { setS({ ...s, auto_rename_folder: e.target.checked }); persist({ auto_rename_folder: e.target.checked }) }} />Anfrage → Auftrag automatisch umbenennen</label>
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="„Demnächst“ = Frist in ≤ Arbeitstagen"><input type="number" min={0} className="input" value={s.warn_workdays} onChange={(e) => setS({ ...s, warn_workdays: Number(e.target.value) })} onBlur={() => persist({ warn_workdays: s.warn_workdays })} /></Field>
               <Field label="Projekt gelb bei Frist in ≤ Arbeitstagen"><input type="number" min={0} className="input" value={s.warn_project_workdays} onChange={(e) => setS({ ...s, warn_project_workdays: Number(e.target.value) })} onBlur={() => persist({ warn_project_workdays: s.warn_project_workdays })} /></Field>

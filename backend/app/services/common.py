@@ -43,8 +43,6 @@ def settings_out(db: Session) -> SettingsOut:
         warn_workdays=int(get_setting(db, "warn_workdays", "3") or 3),
         warn_project_workdays=int(get_setting(db, "warn_project_workdays", "5") or 5),
         auto_backup=get_setting(db, "auto_backup", "1") == "1",
-        auto_create_folder=get_setting(db, "auto_create_folder", "1") == "1",
-        auto_rename_folder=get_setting(db, "auto_rename_folder", "1") == "1",
         dashboard_widgets=widgets,
     )
 

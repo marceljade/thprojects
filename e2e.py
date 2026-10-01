@@ -4,6 +4,7 @@ Server vorher mit leerer Test-Datenbank starten, nie gegen backend/data:
   PMTH_DATA=<leerer Ordner> python -m uvicorn app.main:app --port 8765   (im Ordner backend)
 """
 import json
+import os
 import re
 import sys
 import tempfile
@@ -14,6 +15,8 @@ import httpx
 from playwright.sync_api import sync_playwright, expect
 
 BASE = "http://127.0.0.1:8765"
+# Eigenes Chromium (z. B. wenn der Download von playwright install nicht geht): PMTH_CHROMIUM=<Pfad zur chrome-Binary>
+LAUNCH = {"executable_path": os.environ["PMTH_CHROMIUM"]} if os.environ.get("PMTH_CHROMIUM") else {}
 OUT = Path(__file__).resolve().parent / "shots"
 OUT.mkdir(exist_ok=True)
 LAPTOP = {"width": 1366, "height": 768}
@@ -22,7 +25,7 @@ iso = lambda d: d.isoformat()  # noqa: E731
 
 # ---- Leeres Dashboard auf Laptop-Breite, bevor Testdaten entstehen
 with sync_playwright() as pw:
-    b = pw.chromium.launch()
+    b = pw.chromium.launch(**LAUNCH)
     pg = b.new_context(viewport=LAPTOP, locale="de-DE").new_page()
     pg.goto(BASE + "/")
     pg.wait_for_timeout(600)
@@ -70,7 +73,7 @@ def shot(page, name):
     page.screenshot(path=str(OUT / f"{name}.png"), full_page=False)
 
 with sync_playwright() as pw:
-    browser = pw.chromium.launch()
+    browser = pw.chromium.launch(**LAUNCH)
     ctx = browser.new_context(viewport={"width": 1440, "height": 900}, locale="de-DE")
     page = ctx.new_page()
     errors = []
@@ -101,15 +104,13 @@ with sync_playwright() as pw:
     expect(page.get_by_text("WP Moorriem")).to_be_visible()
     page.wait_for_timeout(600)
     shot(page, "04_projektseite")
-    assert (NAS / "2026" / "26-315 Auftrag WP Moorriem – Vermessung 3x E-160").is_dir(), list((NAS / "2026").iterdir())
-    # Status zurück auf Anfrage -> Ordner wird zu "Anfrage" umbenannt (Phasenwechsel), danach wieder Auftrag
+    # Die App legt keine Ordner an und benennt keine um, auch nicht beim Phasenwechsel
+    assert list((NAS / "2026").iterdir()) == [], list((NAS / "2026").iterdir())
     page.locator("select").nth(0).select_option("anfrage")
     page.wait_for_timeout(800)
-    assert (NAS / "2026" / "26-315 Anfrage WP Moorriem – Vermessung 3x E-160").is_dir(), list((NAS / "2026").iterdir())
-    shot(page, "04b_ordner_umbenannt")
     page.locator("select").nth(0).select_option("in_bearbeitung")
     page.wait_for_timeout(800)
-    assert (NAS / "2026" / "26-315 Auftrag WP Moorriem – Vermessung 3x E-160").is_dir()
+    assert list((NAS / "2026").iterdir()) == [], list((NAS / "2026").iterdir())
 
     # Aufgabe öffnen und Frist verschieben
     page.get_by_text("Messung durchführen").first.click()
@@ -117,6 +118,15 @@ with sync_playwright() as pw:
     shot(page, "05_aufgabe_dialog")
     page.get_by_role("button", name="+3 AT").click()
     page.wait_for_timeout(400)
+    # Datum aus der Zwischenablage ins Fristfeld einfügen (deutsches Format)
+    ctx.grant_permissions(["clipboard-read", "clipboard-write"])
+    page.evaluate("navigator.clipboard.writeText('24.12.2026')")
+    due = page.get_by_role("dialog").locator("input[type=date]").nth(1)
+    due.click()
+    page.keyboard.press("Control+V")
+    page.wait_for_timeout(300)
+    assert due.input_value() == "2026-12-24", due.input_value()
+    shot(page, "05b_datum_eingefuegt")
     page.keyboard.press("Escape")
 
     # Neue Aufgabe über Tastenkürzel n

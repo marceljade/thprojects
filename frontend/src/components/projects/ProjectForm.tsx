@@ -2,13 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Project } from '@/api/types'
 import { useCreateProject, useMeta, useTemplatePreview, useUpdateProject } from '@/api/hooks'
-import { Dialog, Field, Select, useToast } from '@/components/ui'
+import { DateInput, Dialog, Field, Select, useToast } from '@/components/ui'
 import { CATEGORY, fmtDate, PRIORITY, PROJECT_STATUS, addDays, parseDate, toIso } from '@/lib/format'
 
 const empty = {
   project_number: '', name: '', client: '', category: 'gutachten', assignee_id: '', participants: '', status: 'anfrage', priority: 'normal',
   request_date: '', offer_date: '', order_date: '', offered_weeks: '', target_deadline: '', folder_path: '', remarks: '', template_id: '', compute_due_dates: true,
-  create_folder: true,
 }
 
 const PHASE = (status: string) => (status === 'anfrage' || status === 'angebot' ? 'Anfrage' : 'Auftrag')
@@ -44,7 +43,7 @@ export function ProjectForm({ open, onClose, project }: { open: boolean; onClose
     if (project) {
       setF({ ...empty, ...Object.fromEntries(Object.entries(project).filter(([k]) => k in empty).map(([k, v]) => [k, v ?? ''])) as Partial<F>, assignee_id: project.assignee_id ? String(project.assignee_id) : '', template_id: '' })
     } else {
-      setF({ ...empty, assignee_id: meta?.settings.my_user_id ? String(meta.settings.my_user_id) : '', create_folder: meta?.settings.auto_create_folder ?? true })
+      setF({ ...empty, assignee_id: meta?.settings.my_user_id ? String(meta.settings.my_user_id) : '' })
     }
   }, [open, project, meta])
 
@@ -100,7 +99,6 @@ export function ProjectForm({ open, onClose, project }: { open: boolean; onClose
     } else {
       data.template_id = f.template_id ? Number(f.template_id) : null
       data.compute_due_dates = f.compute_due_dates
-      data.create_folder = f.create_folder
       create.mutate(data, { onSuccess: (p) => { toast(`Projekt ${p.project_number} angelegt${p.folder_note ? ` · ${p.folder_note}` : ''}`); onClose(); nav(`/projekte/${p.id}`) }, onError: (e) => toast(e.message, 'error') })
     }
   }
@@ -127,21 +125,18 @@ export function ProjectForm({ open, onClose, project }: { open: boolean; onClose
             <Field label="Priorität"><Select value={f.priority} onChange={(v) => set('priority', v)} options={Object.entries(PRIORITY).map(([value, label]) => ({ value, label }))} /></Field>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <Field label="Anfrage"><input type="date" className="input" value={f.request_date} onChange={(e) => set('request_date', e.target.value)} /></Field>
-            <Field label="Angebot"><input type="date" className="input" value={f.offer_date} onChange={(e) => set('offer_date', e.target.value)} /></Field>
-            <Field label="Auftrag"><input type="date" className="input" value={f.order_date} onChange={(e) => set('order_date', e.target.value)} /></Field>
+            <Field label="Anfrage"><DateInput value={f.request_date} onChange={(v) => set('request_date', v)} /></Field>
+            <Field label="Angebot"><DateInput value={f.offer_date} onChange={(v) => set('offer_date', v)} /></Field>
+            <Field label="Auftrag"><DateInput value={f.order_date} onChange={(v) => set('order_date', v)} /></Field>
             <Field label="Dauer lt. Angebot (Wochen)"><input type="number" min={0} step={0.5} className="input" value={f.offered_weeks} onChange={(e) => set('offered_weeks', e.target.value)} /></Field>
             <Field label="Projektfrist (Ziel)" hint={deadline && !f.target_deadline ? `vertraglich: ${fmtDate(deadline)}` : 'überschreibt die vertragliche Frist'}>
-              <input type="date" className="input" value={f.target_deadline} onChange={(e) => set('target_deadline', e.target.value)} />
+              <DateInput value={f.target_deadline} onChange={(v) => set('target_deadline', v)} />
             </Field>
           </div>
           <Field label="Projektordner" hint={f.folder_path ? 'eigener Pfad' : (expectedFolder(meta?.settings.base_path ?? '', f.project_number, f.status, f.name)
-            ? <>{editing ? 'wird so erwartet: ' : f.create_folder ? 'wird angelegt als ' : 'wird gesucht als '}<span className="text-ink break-all">{expectedFolder(meta?.settings.base_path ?? '', f.project_number, f.status, f.name)}</span></>
-            : 'Basispfad in den Einstellungen setzen, dann wird der Ordner automatisch angelegt')}>
-            <div className="flex gap-2">
-              <input className="input" value={f.folder_path} onChange={(e) => set('folder_path', e.target.value)} placeholder={editing ? 'leer = automatisch' : 'leer = automatisch, oder Pfad einfügen'} />
-              {!editing && <label className="flex items-center gap-1.5 text-[12px] text-muted whitespace-nowrap"><input type="checkbox" checked={f.create_folder} onChange={(e) => set('create_folder', e.target.checked)} />anlegen</label>}
-            </div>
+            ? <>wird gesucht als <span className="text-ink break-all">{expectedFolder(meta?.settings.base_path ?? '', f.project_number, f.status, f.name)}</span></>
+            : 'Basispfad in den Einstellungen setzen, dann wird ein vorhandener Ordner gefunden')}>
+            <input className="input" value={f.folder_path} onChange={(e) => set('folder_path', e.target.value)} placeholder={editing ? 'leer = im Basispfad suchen' : 'leer = im Basispfad suchen, oder Pfad einfügen'} />
           </Field>
           <Field label="Bemerkung"><input className="input" value={f.remarks} onChange={(e) => set('remarks', e.target.value)} /></Field>
         </div>
