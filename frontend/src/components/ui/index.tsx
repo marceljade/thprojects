@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Check, X } from 'lucide-react'
-import { cx } from '@/lib/format'
+import { cx, parsePastedDate } from '@/lib/format'
 
 /* ------------------------------------------------------------------ Toast */
 interface ToastMsg { id: number; text: string; kind: 'ok' | 'error' }
@@ -79,6 +79,24 @@ export function Field({ label, children, hint, className }: { label: string; chi
       {children}
       {hint && <span className="block mt-1 text-[12px] text-faint">{hint}</span>}
     </label>
+  )
+}
+
+/** Datumsfeld: tippen, Kalender oder Datum einfügen (15.10.2026, 15.10.26, 2026-10-15). Wert immer ISO oder leer. */
+export function DateInput({ value, onChange, onBlur, className, disabled }:
+  { value: string | null | undefined; onChange: (v: string) => void; onBlur?: () => void; className?: string; disabled?: boolean }) {
+  const toast = useToast()
+  return (
+    <input type="date" className={cx('input', className)} value={value ?? ''} disabled={disabled}
+      onChange={(e) => onChange(e.target.value)} onBlur={onBlur}
+      onPaste={(e) => {
+        const text = e.clipboardData.getData('text')
+        if (!text.trim()) return
+        e.preventDefault()
+        const iso = parsePastedDate(text)
+        if (iso) onChange(iso)
+        else toast(`„${text.trim()}“ ist kein Datum. Erwartet wird TT.MM.JJJJ.`, 'error')
+      }} />
   )
 }
 

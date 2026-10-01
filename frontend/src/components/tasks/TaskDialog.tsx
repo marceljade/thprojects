@@ -4,7 +4,7 @@ import { CalendarPlus, Check, FolderOpen, RotateCcw, Trash2 } from 'lucide-react
 import type { Task } from '@/api/types'
 import { api } from '@/api/client'
 import { useCompleteTask, useCreateNote, useDeleteTask, useMeta, useReopenTask, useShiftTask, useUpdateTask } from '@/api/hooks'
-import { Confirm, Dialog, Field, Select, useToast } from '@/components/ui'
+import { Confirm, DateInput, Dialog, Field, Select, useToast } from '@/components/ui'
 import { cx, dueColor, dueLabel, fmtDate, fmtDateTime, PRIORITY, TASK_STATUS } from '@/lib/format'
 import type { Note } from '@/api/types'
 import { useQuery } from '@tanstack/react-query'
@@ -77,10 +77,10 @@ export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () =
           <Select value={form.assignee_id ?? ''} onChange={(v) => { set('assignee_id', v ? Number(v) : null); save({ assignee_id: v ? Number(v) : null }) }} options={users} placeholder="–" />
         </Field>
         <Field label="Start">
-          <input type="date" className="input" value={form.start_date ?? ''} onChange={(e) => set('start_date', e.target.value || null)} onBlur={blurSave('start_date')} />
+          <DateInput value={form.start_date} onChange={(v) => set('start_date', v || null)} onBlur={blurSave('start_date')} />
         </Field>
         <Field label="Frist">
-          <input type="date" className="input" value={form.due_date ?? ''} onChange={(e) => set('due_date', e.target.value || null)} onBlur={blurSave('due_date')} />
+          <DateInput value={form.due_date} onChange={(v) => set('due_date', v || null)} onBlur={blurSave('due_date')} />
         </Field>
         <Field label="Aufgabenart">
           <Select value={form.task_type_id ?? ''} onChange={(v) => { set('task_type_id', v ? Number(v) : null); save({ task_type_id: v ? Number(v) : null }) }}
@@ -101,7 +101,7 @@ export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () =
         <div className="mt-3 p-3 rounded-md border border-blau/30 bg-blau/5 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Field label="Worauf wird gewartet?" className="col-span-2"><input className="input" value={form.waiting_for ?? ''} onChange={(e) => set('waiting_for', e.target.value)} onBlur={blurSave('waiting_for')} placeholder="z. B. Unterlagen" /></Field>
           <Field label="Von wem?"><input className="input" value={form.waiting_on ?? ''} onChange={(e) => set('waiting_on', e.target.value)} onBlur={blurSave('waiting_on')} placeholder="Kunde, Kollege" /></Field>
-          <Field label="Erinnerung am"><input type="date" className="input" value={form.reminder_date ?? ''} onChange={(e) => set('reminder_date', e.target.value || null)} onBlur={blurSave('reminder_date')} /></Field>
+          <Field label="Erinnerung am"><DateInput value={form.reminder_date} onChange={(v) => set('reminder_date', v || null)} onBlur={blurSave('reminder_date')} /></Field>
           <div className="col-span-full text-[12px] text-muted">wartet seit {fmtDate(t.waiting_since)}</div>
         </div>
       )}

@@ -56,13 +56,14 @@ README.md          Nutzerdoku, Logik, Update-Anleitung
 - Aufgabenstatus: nicht_begonnen, geplant, in_bearbeitung, wartet (mit waiting_for / waiting_on / waiting_since / reminder_date), erledigt, entfaellt.
 - Projektfrist = target_deadline oder order_date + offered_weeks · 7 (Kalendertage, vertraglich). Aufgabenfristen aus Vorlagen = Projektfrist minus Offset in Arbeitstagen, Feiertagstabelle, bei zu kurzer Restzeit proportional gestaucht.
 - Fortschritt gewichtet über Aufgaben außer entfaellt, Gewicht aus Aufgabenart.
-- Projektordner `<Basispfad>\20JJ\<Nr> <Anfrage|Auftrag> <Name>`. Phase Anfrage für anfrage/angebot, Auftrag ab beauftragt. Umbenennung genau beim Phasenwechsel, nur das Phasenwort. Button „Ordner abgleichen" für alles andere.
+- Projektordner `<Basispfad>\20JJ\<Nr> <Anfrage|Auftrag> <Name>`. Phase Anfrage für anfrage/angebot, Auftrag ab beauftragt. Die App liest nur: vorhandenen Ordner suchen (`find_folder`), Pfad erkennen, Ordner öffnen. Sie legt nie Ordner an und benennt nie um, der Ablageort ist das NAS (Entscheidung 01.10.2026, nicht wieder einbauen).
 - Auftragsdatum eingetragen → Status springt von anfrage/angebot auf beauftragt.
 - Pfad im Feld Projektordner (Neues Projekt) → `folders.parse_folder_path` / `parseFolderPath` füllen Nummer, Name, Status (Anfrage → anfrage, Auftrag → beauftragt) nur in leere Felder, Status gilt als leer solange anfrage. Rückmeldung per Toast.
 - Dashboard hat genau vier Bereiche: Heute (überfällig + heute + rote Projekte mit reasons), Als Nächstes, Aktive Projekte (sortiert rot → gelb → grün, dann Frist, zweite Zeile mit reasons/warnings bei gelb/rot), Wartet auf Rückmeldung. „Zuletzt" nur, wenn darunter Platz im Viewport ist. Leere Bereiche sind eine Textzeile ohne Kasten. Schalter in dashboard_widgets: heute, upcoming, active_projects, waiting, activity (alte Schlüssel attention/projects werden ignoriert).
 - Farbträger auf dem Dashboard: nur die Zahl im Kachelstreifen und die linke Kante (rot überfällig/rotes Projekt, orange heute). Sonst keine Semantikfarbe.
 - Kalender: Standard Monat, Ansicht in localStorage (`calendar_view`). Monat und Woche füllen die Höhe des Viewports, Sa/So in der Woche nur breit, wenn dort Aufgaben liegen.
 - `.page` ist volle Breite mit 20 px Rand, `.page-narrow` (1240 px) nur für Formularseiten wie Einstellungen. Sidebar unter 1400 px standardmäßig eingeklappt (Laptop 1366 startet eingeklappt).
+- Datumsfelder sind `DateInput` (ui/index.tsx): tippen, Kalender oder Einfügen aus der Zwischenablage (`parsePastedDate` in format.ts: TT.MM.JJJJ, TT.MM.JJ, TT.MM., ISO). Kein nacktes `<input type="date">` mehr.
 - Kein Excel-Import. Export nach Excel/CSV ja.
 - Ein Nutzer, keine Anmeldung, „Ich bin" in den Einstellungen. Mehrbenutzer später über users + activity_log.user_id.
 
@@ -82,7 +83,7 @@ Bei UI-Änderungen zusätzlich `python e2e.py` bei laufendem Server und die betr
 
 **Abschluss jeder Aufgabe**: `npm run build` ausführen, `backend/static` mit committen, Branch pushen, Pull Request nach `main` erstellen und mergen. Der Nutzer hat lokal kein Git und holt den Stand per „Download ZIP" von `main`. Was nicht auf `main` ist, kommt bei ihm nicht an.
 
-**Vor jeder UI-Änderung**: einmal `python -m playwright install chromium` in der venv ausführen, falls der Browser fehlt. Danach `e2e.py` bei laufendem Server laufen lassen und die Screenshots in `shots/` prüfen.
+**Vor jeder UI-Änderung**: einmal `python -m playwright install chromium` in der venv ausführen, falls der Browser fehlt. Geht der Download nicht (Cloud-Sitzung hinter Proxy), ein vorhandenes Chromium per `PMTH_CHROMIUM=/opt/pw-browsers/chromium` an `e2e.py` geben. Danach `e2e.py` bei laufendem Server laufen lassen und die Screenshots in `shots/` prüfen.
 
 **Definition of Done**: Tests grün, Build grün, Typen und DTOs synchron, Protokolleintrag für neue Schreibaktionen, README-Abschnitt angepasst, wenn sich Verhalten für den Nutzer ändert, CLAUDE.md-Abschnitt „Entscheidungen" oder „Backlog" angepasst, wenn etwas entschieden oder erledigt wurde.
 
@@ -113,7 +114,7 @@ Zwischendurch nur melden, wenn sich die Richtung ändert oder eine Entscheidung 
 - Keine UserForms-Logik, kein Excel-Nachbau, keine Tabellen mit 20 Spalten als Hauptansicht.
 - Keine Features, die nicht aus einer der fünf Morgenfragen oben folgen, ohne Rückfrage.
 - Keine Priorisierung „erfinden", die nicht aus Fristen, Status oder Priorität folgt. Jede Hervorhebung trägt ihren Grund als Text (`reasons`, `warnings`).
-- Keine stillen Datenänderungen: jede Automatik (Statussprung, Ordner umbenennen, Fristen stauchen) ist im Protokoll oder in einer Rückmeldung sichtbar.
+- Keine stillen Datenänderungen: jede Automatik (Statussprung, Fristen stauchen) ist im Protokoll oder in einer Rückmeldung sichtbar. Keine Schreibzugriffe auf das Dateisystem außerhalb von `backend/data`.
 - Keine Semikolons in deutschen UI-Texten, keine Großschreibung ganzer Wörter, keine „→"-Anhängsel an Buttons.
 
 ## Backlog (Reihenfolge = Vorschlag, Nutzer entscheidet)
@@ -127,4 +128,4 @@ Zwischendurch nur melden, wenn sich die Richtung ändert oder eine Entscheidung 
 7. Outlook: Aufgabe als Termin anlegen (ICS-Download reicht als erster Schritt)
 8. Netzwerkbetrieb mit mehreren Nutzern: Anmeldung, `PMTH_HOST=0.0.0.0`, PostgreSQL
 
-Erledigt und nicht mehr offen: Excel-System (VBA, separates Paket), Web-App v1.0 mit Dashboard, Aufgaben, Projekten, Kalender, Zeitplan, Aktivitäten, Einstellungen, Export, Backup, Projektordner-Automatik, Schema-Migration. Pfad einfügen im Projektformular. Verdichtung für Laptop 1366×768 (volle Breite, vier Dashboard-Bereiche, Kalender füllt die Höhe, e2e-Screenshots bei 1366×768).
+Erledigt und nicht mehr offen: Excel-System (VBA, separates Paket), Web-App v1.0 mit Dashboard, Aufgaben, Projekten, Kalender, Zeitplan, Aktivitäten, Einstellungen, Export, Backup, Projektordner-Automatik, Schema-Migration. Pfad einfügen im Projektformular. Datum einfügen in Datumsfelder. Ordner-Automatik (anlegen, umbenennen, abgleichen) wieder ausgebaut. Verdichtung für Laptop 1366×768 (volle Breite, vier Dashboard-Bereiche, Kalender füllt die Höhe, e2e-Screenshots bei 1366×768).

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useCreateTask, useMeta, useProjects } from '@/api/hooks'
-import { Dialog, Field, Select, useToast } from '@/components/ui'
+import { DateInput, Dialog, Field, Select, useToast } from '@/components/ui'
 import { PRIORITY, todayIso } from '@/lib/format'
 
 const empty = { project_id: '', title: '', task_type_id: '', assignee_id: '', status: 'nicht_begonnen', priority: 'normal', start_date: '', due_date: '', description: '', note: '' }
@@ -60,10 +60,10 @@ export function TaskForm({ open, onClose, projectId }: { open: boolean; onClose:
           <Field label="Aufgabenart">
             <Select value={f.task_type_id} onChange={(v) => set('task_type_id', v)} placeholder="–" options={(meta?.task_types ?? []).filter((x) => x.active).map((x) => ({ value: x.id, label: x.name }))} />
           </Field>
-          <Field label="Start"><input type="date" className="input" value={f.start_date} onChange={(e) => set('start_date', e.target.value)} /></Field>
+          <Field label="Start"><DateInput value={f.start_date} onChange={(v) => set('start_date', v)} /></Field>
           <Field label="Frist">
             <div className="flex gap-1">
-              <input type="date" className="input" value={f.due_date} onChange={(e) => set('due_date', e.target.value)} />
+              <DateInput value={f.due_date} onChange={(v) => set('due_date', v)} />
               <button type="button" className="btn-outline btn-sm h-9" title="heute" onClick={() => set('due_date', todayIso())}>heute</button>
             </div>
           </Field>

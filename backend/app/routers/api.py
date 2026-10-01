@@ -94,11 +94,6 @@ def open_folder(project_id: int, db: Session = Depends(get_db)):
     return projects.open_folder(db, project_id)
 
 
-@router.post("/projects/{project_id}/sync-folder")
-def sync_folder(project_id: int, db: Session = Depends(get_db)):
-    return projects.sync_folder(db, project_id)
-
-
 @router.put("/projects/{project_id}/tasks/order", response_model=list[schemas.TaskOut])
 def reorder(project_id: int, data: schemas.TaskReorder, db: Session = Depends(get_db)):
     return tasks.reorder_tasks(db, project_id, data.task_ids)

@@ -197,7 +197,6 @@ class ProjectCreate(BaseModel):
     remarks: str = ""
     template_id: int | None = None
     compute_due_dates: bool = True
-    create_folder: bool = True
 
     @field_validator("project_number")
     @classmethod
@@ -339,8 +338,6 @@ class SettingsOut(BaseModel):
     warn_workdays: int
     warn_project_workdays: int
     auto_backup: bool
-    auto_create_folder: bool
-    auto_rename_folder: bool
     dashboard_widgets: dict[str, bool]
 
 
@@ -350,8 +347,6 @@ class SettingsIn(BaseModel):
     warn_workdays: int | None = Field(default=None, ge=0, le=30)
     warn_project_workdays: int | None = Field(default=None, ge=0, le=60)
     auto_backup: bool | None = None
-    auto_create_folder: bool | None = None
-    auto_rename_folder: bool | None = None
     dashboard_widgets: dict[str, bool] | None = None
 
 

@@ -1,7 +1,8 @@
 """Projektordner: <Basispfad>\\20JJ\\<Projektnr> <Anfrage|Auftrag> <Projektname>
 
-Phase "Anfrage" für Anfrage und Angebot, "Auftrag" ab Beauftragt. Beim Phasenwechsel wird
-der vorhandene Ordner umbenannt (nur das Phasenwort, der restliche Name bleibt wie er ist).
+Phase "Anfrage" für Anfrage und Angebot, "Auftrag" ab Beauftragt. Die App liest nur:
+Pfad erkennen, vorhandenen Ordner suchen, Ordner öffnen. Sie legt nie Ordner an und
+benennt nie um, der Ablageort ist das NAS.
 """
 from __future__ import annotations
 
@@ -107,91 +108,6 @@ def find_folder(db: Session, project_number: str) -> str | None:
     except OSError:
         return None
     return None
-
-
-def base_reachable(db: Session) -> bool:
-    base = base_path(db)
-    try:
-        return bool(base) and Path(base).is_dir()
-    except OSError:
-        return False
-
-
-def create_folder(db: Session, pr: models.Project) -> dict:
-    """Legt den erwarteten Ordner an (inkl. Jahresordner). Liefert {ok, path, message}."""
-    target = expected_folder_path(db, pr)
-    if not target:
-        return {"ok": False, "path": "", "message": "Basispfad fehlt oder Projektnummer hat nicht das Format JJ-NNN."}
-    if not base_reachable(db):
-        return {"ok": False, "path": target, "message": f"Basispfad nicht erreichbar: {base_path(db)}"}
-    try:
-        Path(target).mkdir(parents=True, exist_ok=True)
-    except OSError as e:
-        return {"ok": False, "path": target, "message": f"Ordner konnte nicht angelegt werden: {e}"}
-    return {"ok": True, "path": target, "message": f"Ordner angelegt: {Path(target).name}"}
-
-
-def rename_phase(db: Session, pr: models.Project, log: bool = True) -> dict | None:
-    """Benennt den vorhandenen Ordner um, wenn das Phasenwort nicht mehr zum Status passt.
-    Liefert None, wenn nichts zu tun war."""
-    cur = current_path(pr)
-    if not cur:
-        return None
-    old_phase = phase_of_folder(cur)
-    new_phase = phase_for_status(pr.status)
-    if old_phase is None or old_phase == new_phase:
-        return None
-    p = Path(cur)
-    new_name = re.sub(r"^(\S+\s+)(Anfrage|Auftrag)\b", lambda m: m.group(1) + new_phase, p.name, count=1)
-    target = p.with_name(new_name)
-    try:
-        if not p.is_dir():
-            # Ordner gibt es (noch) nicht oder Laufwerk nicht erreichbar: nur den gespeicherten Pfad anpassen
-            pr.folder_path = str(target)
-            return {"ok": False, "path": str(target), "message": f"Ordner nicht erreichbar, Pfad in der App auf „{new_phase}“ gesetzt."}
-        if target.exists():
-            return {"ok": False, "path": cur, "message": f"Zielordner existiert bereits: {target.name}"}
-        p.rename(target)
-    except OSError as e:
-        return {"ok": False, "path": cur, "message": f"Ordner konnte nicht umbenannt werden: {e}"}
-    pr.folder_path = str(target)
-    if log:
-        common.log(db, "Projektordner umbenannt", project_id=pr.id, field="ordner", old=p.name, new=target.name)
-    return {"ok": True, "path": str(target), "message": f"Ordner umbenannt: {target.name}"}
-
-
-def sync_folder(db: Session, pr: models.Project) -> dict:
-    """Manueller Abgleich: Ordner auf <Nr> <Phase> <Name> bringen oder anlegen."""
-    cur = current_path(pr)
-    target = expected_folder_path(db, pr)
-    if not target:
-        return {"ok": False, "path": cur, "message": "Basispfad fehlt oder Projektnummer hat nicht das Format JJ-NNN."}
-    if not cur:
-        found = find_folder(db, pr.project_number)
-        if found:
-            pr.folder_path = found
-            cur = found
-        else:
-            r = create_folder(db, pr)
-            if r["ok"]:
-                pr.folder_path = r["path"]
-                common.log(db, "Projektordner angelegt", project_id=pr.id, field="ordner", new=Path(r["path"]).name)
-            return r
-    if Path(cur).name == Path(target).name:
-        return {"ok": True, "path": cur, "message": "Ordnername passt bereits."}
-    p = Path(cur)
-    try:
-        if not p.is_dir():
-            return {"ok": False, "path": cur, "message": f"Ordner nicht gefunden oder Laufwerk nicht erreichbar: {cur}"}
-        new = p.with_name(Path(target).name)
-        if new.exists():
-            return {"ok": False, "path": cur, "message": f"Zielordner existiert bereits: {new.name}"}
-        p.rename(new)
-    except OSError as e:
-        return {"ok": False, "path": cur, "message": f"Ordner konnte nicht umbenannt werden: {e}"}
-    common.log(db, "Projektordner umbenannt", project_id=pr.id, field="ordner", old=p.name, new=new.name)
-    pr.folder_path = str(new)
-    return {"ok": True, "path": str(new), "message": f"Ordner umbenannt: {new.name}"}
 
 
 def can_open_folders() -> bool:

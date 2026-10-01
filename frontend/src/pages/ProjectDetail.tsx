@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowDown, ArrowUp, CheckCheck, FolderOpen, FolderSync, LayoutTemplate, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, CheckCheck, FolderOpen, LayoutTemplate, Pencil, Plus, Trash2 } from 'lucide-react'
 import type { Task } from '@/api/types'
-import { useApplyTemplate, useCompleteProject, useCreateNote, useDeleteNote, useDeleteProject, useMeta, useOpenFolder, useProject, useReorderTasks, useSchedule, useSyncFolder, useUpdateProject } from '@/api/hooks'
+import { useApplyTemplate, useCompleteProject, useCreateNote, useDeleteNote, useDeleteProject, useMeta, useOpenFolder, useProject, useReorderTasks, useSchedule, useUpdateProject } from '@/api/hooks'
 import { useUi } from '@/components/layout/Shell'
 import { Gantt } from '@/components/schedule/Gantt'
 import { PriorityMark } from '@/components/tasks/TaskRow'
-import { CheckCircle, Confirm, Dialog, Dot, Field, ProgressBar, Select, Spinner, useToast } from '@/components/ui'
+import { CheckCircle, Confirm, DateInput, Dialog, Dot, Field, ProgressBar, Select, Spinner, useToast } from '@/components/ui'
 import { useCompleteTask, useReopenTask } from '@/api/hooks'
 import { CATEGORY, cx, dueColor, dueLabel, fmtDate, fmtDateTime, PRIORITY, PROJECT_STATUS, signalBg, SIGNAL, TASK_STATUS } from '@/lib/format'
 import { useQuery } from '@tanstack/react-query'
@@ -26,7 +26,6 @@ export default function ProjectDetail() {
   const complete = useCompleteProject()
   const applyTpl = useApplyTemplate()
   const openFolder = useOpenFolder()
-  const syncFolder = useSyncFolder()
   const reorder = useReorderTasks()
   const addNote = useCreateNote()
   const delNote = useDeleteNote()
@@ -49,7 +48,7 @@ export default function ProjectDetail() {
   const tasks = p.tasks.filter((t) => showDone || t.is_open)
   const openCount = p.tasks.filter((t) => t.is_open).length
 
-  const setStatus = (v: string) => update.mutate({ id: p.id, data: { status: v } }, { onSuccess: (r) => toast(r.folder_note ? `Status geändert · ${r.folder_note}` : 'Status geändert'), onError: (e) => toast(e.message, 'error') })
+  const setStatus = (v: string) => update.mutate({ id: p.id, data: { status: v } }, { onSuccess: () => toast('Status geändert'), onError: (e) => toast(e.message, 'error') })
   const setPriority = (v: string) => update.mutate({ id: p.id, data: { priority: v } })
   const setAssignee = (v: string) => update.mutate({ id: p.id, data: v ? { assignee_id: Number(v) } : { clear: ['assignee_id'] } })
   const move = (t: Task, dir: -1 | 1) => {
@@ -83,7 +82,6 @@ export default function ProjectDetail() {
           <button className="btn-outline" onClick={doOpenFolder} disabled={openFolder.isPending}><FolderOpen size={14} />Projektordner öffnen</button>
           <button className="btn-outline" onClick={() => ui.editProject(p)}><Pencil size={14} />Bearbeiten</button>
           <button className="btn-outline" onClick={() => { setTplId(meta?.templates.find((t) => t.category === p.category)?.id.toString() ?? ''); setTplDeadline(p.deadline ?? ''); setTplDlg(true) }}><LayoutTemplate size={14} />Vorlage anwenden</button>
-          {!p.folder_matches && <button className="btn-outline border-gelb/50" title={`Ordner umbenennen in „${p.expected_folder_name}“`} onClick={() => syncFolder.mutate(p.id, { onSuccess: (r) => toast(r.message, r.ok ? 'ok' : 'error'), onError: (e) => toast(e.message, 'error') })}><FolderSync size={14} />Ordner abgleichen</button>}
           {p.status !== 'abgeschlossen' && <button className="btn-outline" onClick={() => setDoneDlg(true)}><CheckCheck size={14} />Abschließen</button>}
           <button className="btn-ghost text-rot" onClick={() => setConfirmDel(true)} title="Projekt löschen"><Trash2 size={14} /></button>
         </div>
@@ -178,7 +176,6 @@ export default function ProjectDetail() {
           {p.remarks && <section className="card px-4 py-3 text-[13px]"><span className="label">Bemerkung</span>{p.remarks}</section>}
           <section className="card px-4 py-3 text-[12px] text-muted break-all"><span className="label">Projektordner</span>
             {p.folder_path || <span className="text-faint">keiner hinterlegt</span>}
-            {!p.folder_matches && <div className="mt-1 text-gelb">Erwartet: {p.expected_folder_name} – „Ordner abgleichen“ benennt um{p.folder_path ? '' : ' oder legt an'}.</div>}
           </section>
         </div>
       </div>
@@ -204,7 +201,7 @@ export default function ProjectDetail() {
       }>
         <div className="space-y-3">
           <Field label="Vorlage"><Select value={tplId} onChange={setTplId} placeholder="wählen …" options={(meta?.templates ?? []).map((t) => ({ value: t.id, label: t.name }))} /></Field>
-          <Field label="Fristen rückwärts rechnen ab" hint="leer = Aufgaben ohne Frist anlegen"><input type="date" className="input" value={tplDeadline} onChange={(e) => setTplDeadline(e.target.value)} /></Field>
+          <Field label="Fristen rückwärts rechnen ab" hint="leer = Aufgaben ohne Frist anlegen"><DateInput value={tplDeadline} onChange={setTplDeadline} /></Field>
           <p className="text-[12px] text-muted">Die Aufgaben werden an die bestehende Liste angehängt.</p>
         </div>
       </Dialog>

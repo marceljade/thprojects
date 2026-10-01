@@ -175,10 +175,6 @@ def update_settings(db: Session, data: SettingsIn) -> SettingsOut:
         common.set_setting(db, "warn_project_workdays", str(data.warn_project_workdays))
     if data.auto_backup is not None:
         common.set_setting(db, "auto_backup", "1" if data.auto_backup else "0")
-    if data.auto_create_folder is not None:
-        common.set_setting(db, "auto_create_folder", "1" if data.auto_create_folder else "0")
-    if data.auto_rename_folder is not None:
-        common.set_setting(db, "auto_rename_folder", "1" if data.auto_rename_folder else "0")
     if data.dashboard_widgets is not None:
         common.set_setting(db, "dashboard_widgets", json.dumps(data.dashboard_widgets))
     db.commit()

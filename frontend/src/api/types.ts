@@ -57,7 +57,7 @@ export interface Holiday { id: number; date: string; name: string }
 
 export interface Settings {
   my_user_id: number | null; my_user_code: string | null; base_path: string
-  warn_workdays: number; warn_project_workdays: number; auto_backup: boolean; auto_create_folder: boolean; auto_rename_folder: boolean
+  warn_workdays: number; warn_project_workdays: number; auto_backup: boolean
   dashboard_widgets: Record<string, boolean>
 }
 

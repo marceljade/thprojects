@@ -71,7 +71,7 @@ def _check_user(db: Session, user_id: int | None) -> None:
 def create_project(db: Session, data: ProjectCreate) -> ProjectDetail:
     _check_number(db, data.project_number)
     _check_user(db, data.assignee_id)
-    pr = models.Project(**data.model_dump(exclude={"template_id", "compute_due_dates", "create_folder"}))
+    pr = models.Project(**data.model_dump(exclude={"template_id", "compute_due_dates"}))
     if pr.assignee_id is None:
         me = common.my_user(db)
         pr.assignee_id = me.id if me else None
@@ -83,13 +83,7 @@ def create_project(db: Session, data: ProjectCreate) -> ProjectDetail:
     db.flush()
     common.log(db, "Projekt angelegt", project_id=pr.id, field="status", new=pr.status)
     note = None
-    if not folder and data.create_folder and common.get_setting(db, "auto_create_folder", "1") == "1":
-        r = folders.create_folder(db, pr)
-        note = r["message"]
-        if r["ok"]:
-            pr.folder_path = r["path"]
-            common.log(db, "Projektordner angelegt", project_id=pr.id, field="ordner", new=Path(r["path"]).name)
-    elif folder and not (pr.folder_path or "").strip() == (data.folder_path or "").strip():
+    if folder and folder != (data.folder_path or "").strip():
         note = f"Vorhandener Ordner übernommen: {Path(folder).name}"
     if data.template_id:
         apply_template(db, pr, data.template_id, None, data.compute_due_dates)
@@ -99,7 +93,6 @@ def create_project(db: Session, data: ProjectCreate) -> ProjectDetail:
 
 def update_project(db: Session, project_id: int, data: ProjectUpdate) -> ProjectDetail:
     pr = _get(db, project_id)
-    old_status = pr.status
     changes = data.model_dump(exclude_unset=True, exclude={"clear"})
     if "project_number" in changes:
         _check_number(db, changes["project_number"], pr.id)
@@ -123,14 +116,9 @@ def update_project(db: Session, project_id: int, data: ProjectUpdate) -> Project
         pr.status = ProjectStatus.beauftragt
     if "status" in changes and changes["status"] == ProjectStatus.abgeschlossen and pr.completed_at is None:
         pr.completed_at = date.today()
-    note = None
-    if folders.phase_for_status(old_status) != folders.phase_for_status(pr.status) and common.get_setting(db, "auto_rename_folder", "1") == "1":
-        r = folders.rename_phase(db, pr)
-        if r:
-            note = r["message"]
     common.touch(pr)
     db.commit()
-    return get_project(db, pr.id, note)
+    return get_project(db, pr.id)
 
 
 def _label(db: Session, field: str, v):
@@ -157,17 +145,11 @@ def complete_project(db: Session, project_id: int, open_tasks: str) -> ProjectDe
                 common.log(db, "Aufgabe entfällt", project_id=pr.id, task_id=t.id, field="status", old=t.status, new=TaskStatus.entfaellt)
                 t.status = TaskStatus.entfaellt
     common.log(db, "Projekt abgeschlossen", project_id=pr.id, field="status", old=pr.status, new=ProjectStatus.abgeschlossen)
-    old_status = pr.status
     pr.status = ProjectStatus.abgeschlossen
     pr.completed_at = date.today()
-    note = None
-    if folders.phase_for_status(old_status) != folders.PHASE_AUFTRAG and common.get_setting(db, "auto_rename_folder", "1") == "1":
-        r = folders.rename_phase(db, pr)
-        if r:
-            note = r["message"]
     common.touch(pr)
     db.commit()
-    return get_project(db, pr.id, note)
+    return get_project(db, pr.id)
 
 
 # ---------------------------------------------------------------- Vorlagen --
@@ -226,17 +208,9 @@ def open_folder(db: Session, project_id: int) -> dict:
             db.commit()
             path = found
     if not path:
-        raise HTTPException(404, f"Für {pr.project_number} ist kein Projektordner hinterlegt und im Basispfad wurde keiner gefunden. „Ordner abgleichen“ legt ihn an.")
+        raise HTTPException(404, f"Für {pr.project_number} ist kein Projektordner hinterlegt und im Basispfad wurde keiner gefunden. Pfad im Projekt eintragen (Bearbeiten).")
     if not Path(path).is_dir():
         raise HTTPException(404, f"Der Ordner existiert nicht oder das Laufwerk ist nicht erreichbar: {path}")
     if folders.open_in_explorer(path):
         return {"opened": True, "path": path}
     return {"opened": False, "path": path, "message": "Ordner öffnen geht nur unter Windows. Pfad zum Kopieren:"}
-
-
-def sync_folder(db: Session, project_id: int) -> dict:
-    pr = _get(db, project_id)
-    r = folders.sync_folder(db, pr)
-    common.touch(pr)
-    db.commit()
-    return r

@@ -65,7 +65,6 @@ export const useUpdateProject = () => useMut(({ id, data }: { id: number; data: 
 export const useDeleteProject = () => useMut((id: number) => api.del(`/api/projects/${id}`))
 export const useCompleteProject = () => useMut(({ id, open_tasks }: { id: number; open_tasks: string }) => api.post<ProjectDetail>(`/api/projects/${id}/complete`, { open_tasks }))
 export const useApplyTemplate = () => useMut(({ id, data }: { id: number; data: Record<string, unknown> }) => api.post<ProjectDetail>(`/api/projects/${id}/apply-template`, data))
-export const useSyncFolder = () => useMut((id: number) => api.post<{ ok: boolean; path: string; message: string }>(`/api/projects/${id}/sync-folder`))
 export const useOpenFolder = () => useMutation({ mutationFn: (id: number) => api.post<{ opened: boolean; path: string; message?: string }>(`/api/projects/${id}/open-folder`) })
 
 export const useCreateNote = () => useMut((data: Record<string, unknown>) => api.post<Note>('/api/notes', data))
