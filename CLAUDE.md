@@ -80,6 +80,10 @@ cd frontend && npx tsc --noEmit && npm run build
 ```
 Bei UI-Änderungen zusätzlich `python e2e.py` bei laufendem Server und die betroffenen Screenshots in `shots/` ansehen. Nie „sollte funktionieren" schreiben, wenn es nicht gelaufen ist.
 
+**Abschluss jeder Aufgabe**: `npm run build` ausführen, `backend/static` mit committen, Branch pushen, Pull Request nach `main` erstellen und mergen. Der Nutzer hat lokal kein Git und holt den Stand per „Download ZIP" von `main`. Was nicht auf `main` ist, kommt bei ihm nicht an.
+
+**Vor jeder UI-Änderung**: einmal `python -m playwright install chromium` in der venv ausführen, falls der Browser fehlt. Danach `e2e.py` bei laufendem Server laufen lassen und die Screenshots in `shots/` prüfen.
+
 **Definition of Done**: Tests grün, Build grün, Typen und DTOs synchron, Protokolleintrag für neue Schreibaktionen, README-Abschnitt angepasst, wenn sich Verhalten für den Nutzer ändert, CLAUDE.md-Abschnitt „Entscheidungen" oder „Backlog" angepasst, wenn etwas entschieden oder erledigt wurde.
 
 ## Tokens sparen
