@@ -5,7 +5,7 @@ import type { Task } from '@/api/types'
 import { api } from '@/api/client'
 import { useCompleteTask, useCreateNote, useDeleteTask, useMeta, useReopenTask, useShiftTask, useUpdateTask } from '@/api/hooks'
 import { Confirm, DateInput, Dialog, Field, Select, useToast } from '@/components/ui'
-import { cx, dueColor, dueLabel, fmtDate, fmtDateTime, PRIORITY, TASK_STATUS } from '@/lib/format'
+import { addDays, cx, dueColor, dueLabel, fmtDate, fmtDateTime, parseDate, PRIORITY, TASK_STATUS, todayIso, toIso } from '@/lib/format'
 import type { Note } from '@/api/types'
 import { useQuery } from '@tanstack/react-query'
 
@@ -33,7 +33,7 @@ export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () =
   const save = (patch: Record<string, unknown>) => {
     const clear = Object.entries(patch).filter(([, v]) => v === null || v === '').map(([k]) => k)
     const data: Record<string, unknown> = { ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== null && v !== '')) }
-    const clearable = ['due_date', 'start_date', 'reminder_date', 'waiting_since', 'predecessor_id', 'assignee_id', 'task_type_id']
+    const clearable = ['due_date', 'start_date', 'reminder_date', 'waiting_since', 'predecessor_id', 'assignee_id', 'task_type_id', 'planned_date']
     data.clear = clear.filter((k) => clearable.includes(k))
     for (const k of clear) if (!clearable.includes(k)) data[k] = ''
     update.mutate({ id: t.id, data }, { onError: (e) => toast(e.message, 'error') })
@@ -81,6 +81,15 @@ export function TaskDialog({ task, onClose }: { task: Task | null; onClose: () =
         </Field>
         <Field label="Frist">
           <DateInput value={form.due_date} onChange={(v) => set('due_date', v || null)} onBlur={blurSave('due_date')} />
+        </Field>
+        <Field label="Geplant am" hint={t.planned_after_due ? <span className="text-rot">nach Frist geplant</span> : t.warnings[0] ?? 'Tag, an dem du die Aufgabe machen willst'} className="col-span-3">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <DateInput className="w-44" value={form.planned_date} onChange={(v) => set('planned_date', v || null)} onBlur={blurSave('planned_date')} disabled={done} />
+            {!done && ([['heute', () => todayIso()], ['morgen', () => toIso(addDays(new Date(), 1))], ['+1 Tag', () => toIso(addDays(parseDate(form.planned_date) ?? new Date(), 1))], ['-1 Tag', () => toIso(addDays(parseDate(form.planned_date) ?? new Date(), -1))]] as Array<[string, () => string]>).map(([label, f]) => (
+              <button key={label} className="btn-outline btn-sm" onClick={() => { const v = f(); set('planned_date', v); save({ planned_date: v }) }}>{label}</button>
+            ))}
+            {!done && form.planned_date && <button className="btn-ghost btn-sm" onClick={() => { set('planned_date', null); save({ planned_date: null }) }}>ungeplant</button>}
+          </div>
         </Field>
         <Field label="Aufgabenart">
           <Select value={form.task_type_id ?? ''} onChange={(v) => { set('task_type_id', v ? Number(v) : null); save({ task_type_id: v ? Number(v) : null }) }}

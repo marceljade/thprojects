@@ -32,6 +32,7 @@ export function TaskRow({ t, onOpen, showProject = true, dense = false, railLeve
           <PriorityMark p={t.priority} />
           {t.predecessor_open && ['ueberfaellig', 'heute', 'demnaechst', 'woche'].includes(t.due_state) && <span title="Vorgängeraufgabe ist noch offen" className="text-gelb inline-flex"><AlertTriangle size={13} /></span>}
           {t.status === 'wartet' && <span className="text-[11px] text-blau inline-flex items-center gap-1"><Clock size={12} />wartet{t.waiting_on ? ` auf ${t.waiting_on}` : ''}</span>}
+          {!done && t.warnings.length > 0 && <span className={cx('text-[11px] whitespace-nowrap', t.planned_after_due ? 'text-rot' : 'text-muted')}>{t.warnings.join(' · ')}</span>}
         </div>
         {showProject && (
           <div className="text-[12px] text-muted truncate mt-0.5">
@@ -44,6 +45,7 @@ export function TaskRow({ t, onOpen, showProject = true, dense = false, railLeve
       <div className="text-right shrink-0 hidden sm:block">
         <div className={cx('text-[12.5px]', dueColor(t.due_state))}>{dueLabel(t)}</div>
         {t.due_date && <div className="text-[11px] text-faint">{fmtDate(t.due_date)}{t.kw ? ` · KW ${t.kw}` : ''}</div>}
+        {!done && t.planned_date && t.planned_date !== t.due_date && <div className="text-[11px] text-faint">geplant {fmtDate(t.planned_date, { year: false })}</div>}
       </div>
       {t.assignee_code && <span className="shrink-0 w-9 h-6 rounded bg-raised border text-[11px] text-muted flex items-center justify-center" title="Bearbeiter">{t.assignee_code}</span>}
     </div>

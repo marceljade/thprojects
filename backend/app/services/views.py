@@ -7,7 +7,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from .. import models, scheduling
-from ..schemas import CalendarDay, HolidayOut, ScheduleOut, ScheduleProject, ScheduleTask, SearchOut
+from ..schemas import CalendarDay, CalendarMark, HolidayOut, ScheduleOut, ScheduleProject, ScheduleTask, SearchOut
 from . import common
 from .dashboard import _all_tasks
 
@@ -18,23 +18,39 @@ def calendar(db: Session, start: date, end: date, mine: bool = False, assignee_i
     me = common.my_user(db)
     hol = {h.date: h.name for h in db.scalars(select(models.Holiday)).all()}
     by_day: dict[date, list] = {}
+    marks: dict[date, list[CalendarMark]] = {}
     for t in _all_tasks(db):
         if mine and me and t.assignee_id != me.id:
             continue
         if assignee_id and t.assignee_id != assignee_id:
             continue
-        if not t.due_date or not (start <= t.due_date <= end):
+        day = scheduling.calendar_day(t.planned_date, t.due_date)
+        if day is None:
             continue
         o = common.task_out(t, p)
         if not include_done and not o.is_open:
             continue
-        by_day.setdefault(t.due_date, []).append(o)
+        if start <= day <= end:
+            by_day.setdefault(day, []).append(o)
+        # Frist an einem anderen Tag als geplant: kleine Markierung am Fristtag
+        if o.is_open and t.planned_date and t.due_date and t.planned_date != t.due_date and start <= t.due_date <= end:
+            marks.setdefault(t.due_date, []).append(CalendarMark(kind="due", task_id=t.id, project_id=t.project_id,
+                                                                  project_number=o.project_number, title=t.title))
+    for pr in common.load_projects(db):
+        o = common.project_out(pr, p)
+        if not (o.is_active and o.deadline and start <= o.deadline <= end):
+            continue
+        if mine and me and pr.assignee_id != me.id:
+            continue
+        if assignee_id and pr.assignee_id != assignee_id:
+            continue
+        marks.setdefault(o.deadline, []).append(CalendarMark(kind="project", project_id=pr.id, project_number=pr.project_number, title=pr.name))
     days = []
     d = start
     while d <= end:
         tasks = sorted(by_day.get(d, []), key=lambda o: scheduling.task_sort_key(o.due_date, o.due_state, o.priority))
         days.append(CalendarDay(date=d, kw=scheduling.iso_week(d)[1], is_workday=scheduling.is_workday(d, p.holidays),
-                                holiday=hol.get(d), tasks=tasks))
+                                holiday=hol.get(d), tasks=tasks, marks=marks.get(d, [])))
         d += timedelta(days=1)
     return days
 

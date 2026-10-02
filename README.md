@@ -33,6 +33,8 @@ In jedes Datumsfeld kannst du ein Datum aus der Zwischenablage einfügen (`Strg+
 
 ## Logik in Kurzform
 
+- **Frist und geplant am**: die Frist ist der Termin, „geplant am" der Tag, an dem du die Aufgabe machen willst. Das Dashboard „Heute" zeigt, was heute Frist hat, heute geplant ist oder liegen geblieben ist (geplant vor heute, noch offen, dann mit „geplant für Montag"). „Überfällig" richtet sich nur nach der Frist, eine überfällige Aufgabe steht nur dort, auch wenn sie heute geplant ist. Outlook bekommt weiter nur Fristen.
+
 - **Projektfrist** = Ziel-Frist (manuell) oder sonst Auftragsdatum + Wochen · 7.
 - **Vorlagenfristen** = Projektfrist minus Offset in Arbeitstagen (Feiertagstabelle). Passt der Vorlagenzeitraum nicht mehr in die Restzeit, werden die Offsets proportional gestaucht, damit keine Frist in der Vergangenheit entsteht.
 - **Fälligkeit** je Aufgabe: Überfällig · Heute · Demnächst (≤ 3 Arbeitstage, einstellbar) · Diese Woche · Später · Ohne Frist · Erledigt. Erledigte und entfallene Aufgaben sind nie überfällig.
@@ -40,7 +42,7 @@ In jedes Datumsfeld kannst du ein Datum aus der Zwischenablage einfügen (`Strg+
 - **Ampel Projekt**: rot bei überfälliger Aufgabe oder überschrittener Projektfrist · gelb bei Frist in ≤ 3 bzw. ≤ 5 Arbeitstagen · grün sonst · grau bei Anfrage/Angebot/Auf Eis · abgeschlossen. Dazu Hinweise: kein Bearbeiter, keine offene Aufgabe, keine Projektfrist, Aufgaben ohne Frist, Aufgaben deutlich nach der Projektfrist, mehr offene Aufgaben als Arbeitstage.
 - **Wartet auf Rückmeldung** ist ein Aufgabenstatus mit „worauf, von wem, seit wann, Erinnerung am". Erinnerungen erscheinen in der Glocke.
 - **Dashboard** hat vier Bereiche: Heute (überfällig, heute fällig, rote Projekte mit Grund), Als Nächstes, Aktive Projekte (rot vor gelb vor grün, dann nach Frist) und Wartet auf Rückmeldung. Welche Bereiche erscheinen, stellst du in den Einstellungen ein.
-- **Kalender** startet in der Monatsansicht und merkt sich die zuletzt gewählte Ansicht im Browser.
+- **Kalender** zum Planen: Monat (Standard) und Woche, die Ansicht merkt sich der Browser. Jede Aufgabe steht am Tag „geplant am", sonst am Fristtag. Ziehen mit der Maus setzt „geplant am", die Frist ändert sich dabei nie, die änderst du nur im Aufgaben-Dialog (dort gibt es „Geplant am" mit heute, morgen, +1 Tag, −1 Tag als Tastatur-Ersatz). Rechts die Leiste „Ungeplant" mit offenen Aufgaben ohne Frist und ohne Plantag, nach Projekt gruppiert, hoch zuerst. Von dort auf einen Tag ziehen plant, zurück in die Leiste hebt die Planung auf. Liegt der Plantag nach der Frist, ist die Aufgabe rot mit dem Grund „nach Frist geplant", blockiert aber nichts. Ist eine Aufgabe an einem anderen Tag geplant als ihre Frist, steht am Fristtag eine kleine Markierung „Frist: …". Projektfristen stehen als Markierung „Projektfrist · Nr". Wochenende und Feiertage sind erlaubt und optisch abgesetzt. Im Monat zeigt ein Tag höchstens vier Einträge, „+n weitere" klappt auf. In der Woche steht oben im Tag die Anzahl der Aufgaben. Erledigte bleiben an ihrem Tag, durchgestrichen und nicht verschiebbar. Jede Verschiebung steht im Protokoll.
 - **Kategorien**: WEA-Vermessung · Messung · Gutachten/Prognose · Intern. Steuern Filter, Zeitplan und den Vorlagenvorschlag.
 - **Historie**: Anlegen, Erledigen, Status-, Frist-, Bearbeiter-, Prioritätsänderungen, Notizen, Vorlagen.
 
@@ -50,7 +52,7 @@ Ein Projekt ist abgeschlossen, später kommt zum Beispiel eine Planänderung. Da
 
 - **Starten**: auf der Projektseite eines abgeschlossenen Projekts „Folgeauftrag starten", Titel (z. B. „Planänderung 2026"), Startstatus Anfrage oder Angebot, Datum und optional eine Vorlage. Die bisherige Runde wird abgeschlossen, das Projekt steht wieder auf Anfrage, Auftragsdatum, Dauer und Frist sind leer.
 - **Runden**: über der Aufgabenliste schaltest du zwischen „1 Erstauftrag", „2 Planänderung 2026" usw. um. Die aktuelle Runde ist vorausgewählt. Frühere Runden sind nur zum Nachlesen, ihre Aufgaben lassen sich öffnen, aber nicht abhaken oder verschieben.
-- **Tagesansicht**: Dashboard, Aufgabenliste, Kalender und Zeitplan zeigen nur die Aufgaben der aktuellen Runde. Status, Frist, Fortschritt und Ampel eines Projekts beziehen sich immer auf die aktuelle Runde. Ab Runde 2 steht hinter dem Projektnamen ein kleiner Chip „Folgeauftrag 2".
+- **Tagesansichten**: Dashboard, Aufgabenliste, Kalender und Zeitplan zeigen nur die Aufgaben der aktuellen Runde. Status, Frist, Fortschritt und Ampel eines Projekts beziehen sich immer auf die aktuelle Runde. Ab Runde 2 steht hinter dem Projektnamen ein kleiner Chip „Folgeauftrag 2".
 - **Notizen** bleiben projektweit sichtbar, die Historie zeigt den Rundenwechsel. Der Export hat eine Spalte „Runde".
 - Auf dem NAS ändert sich nichts. Als erwarteter Ordnername gilt ab Runde 2 immer die Phase Auftrag, auch wenn die neue Runde noch Anfrage ist.
 

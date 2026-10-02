@@ -30,7 +30,7 @@ def build(db: Session) -> DashboardOut:
     def in_week(t, offset_weeks: int) -> bool:
         return bool(t.due_date) and ws + timedelta(days=7 * offset_weeks) <= t.due_date <= ws + timedelta(days=7 * offset_weeks + 6)
 
-    today = [t for t in open_tasks if t.due_state == DueState.heute]
+    today = [t for t in open_tasks if t.is_today]
     overdue = [t for t in open_tasks if t.due_state == DueState.ueberfaellig]
     soon = [t for t in open_tasks if t.due_state == DueState.demnaechst]
     this_week = [t for t in open_tasks if in_week(t, 0)]

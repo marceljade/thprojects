@@ -84,6 +84,108 @@ def due_state(status: TaskStatus, due: date | None, p: Params) -> tuple[DueState
     return DueState.spaeter, 0
 
 
+WEEKDAYS_DE = ("Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag")
+
+
+def calendar_day(planned: date | None, due: date | None) -> date | None:
+    """Tag im Kalender: geplant am, sonst Frist, sonst keiner."""
+    return planned or due
+
+
+def planned_after_due(planned: date | None, due: date | None) -> bool:
+    return planned is not None and due is not None and planned > due
+
+
+def task_warnings(status: TaskStatus, planned: date | None, due: date | None, today: date) -> list[str]:
+    """Hinweise zur Planung, nur für offene Aufgaben. Jede Hervorhebung trägt ihren Grund als Text."""
+    if not task_is_open(status):
+        return []
+    out: list[str] = []
+    if planned_after_due(planned, due):
+        out.append("nach Frist geplant")
+    if planned is not None and planned < today:
+        out.append(f"geplant für {WEEKDAYS_DE[planned.weekday()]}")
+    return out
+
+
+def is_today(status: TaskStatus, planned: date | None, due: date | None, today: date) -> bool:
+    """Heute = Frist heute, geplant heute oder liegen geblieben (geplant vor heute). Überfällige Aufgaben
+    (Frist vor heute) zählen nicht hier, sondern nur bei Überfällig."""
+    if not task_is_open(status):
+        return False
+    if due is not None and due < today:
+        return False
+    return due == today or (planned is not None and planned <= today)
+
+
+WEEKDAYS_DE = ("Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag")
+
+
+def calendar_day(planned: date | None, due: date | None) -> date | None:
+    """Tag im Kalender: geplant am, sonst Frist, sonst keiner."""
+    return planned or due
+
+
+def planned_after_due(planned: date | None, due: date | None) -> bool:
+    return planned is not None and due is not None and planned > due
+
+
+def task_warnings(status: TaskStatus, planned: date | None, due: date | None, today: date) -> list[str]:
+    """Hinweise zur Planung, nur für offene Aufgaben. Jede Hervorhebung trägt ihren Grund als Text."""
+    if not task_is_open(status):
+        return []
+    out: list[str] = []
+    if planned_after_due(planned, due):
+        out.append("nach Frist geplant")
+    if planned is not None and planned < today:
+        out.append(f"geplant für {WEEKDAYS_DE[planned.weekday()]}")
+    return out
+
+
+def is_today(status: TaskStatus, planned: date | None, due: date | None, today: date) -> bool:
+    """Heute = Frist heute, geplant heute oder liegen geblieben (geplant vor heute). Überfällige Aufgaben
+    (Frist vor heute) zählen nicht hier, sondern nur bei Überfällig."""
+    if not task_is_open(status):
+        return False
+    if due is not None and due < today:
+        return False
+    return due == today or (planned is not None and planned <= today)
+
+
+WEEKDAYS_DE = ("Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag")
+
+
+def calendar_day(planned: date | None, due: date | None) -> date | None:
+    """Tag im Kalender: geplant am, sonst Frist, sonst keiner."""
+    return planned or due
+
+
+def planned_after_due(planned: date | None, due: date | None) -> bool:
+    return planned is not None and due is not None and planned > due
+
+
+def task_warnings(status: TaskStatus, planned: date | None, due: date | None, today: date) -> list[str]:
+    """Hinweise zur Planung, nur für offene Aufgaben. Jede Hervorhebung trägt ihren Grund als Text."""
+    if not task_is_open(status):
+        return []
+    out: list[str] = []
+    if planned_after_due(planned, due):
+        out.append("nach Frist geplant")
+    if planned is not None and planned < today:
+        out.append(f"geplant für {WEEKDAYS_DE[planned.weekday()]}")
+    return out
+
+
+def is_today(status: TaskStatus, planned: date | None, due: date | None, today: date) -> bool:
+    """Heute = Frist heute, geplant heute oder liegen geblieben (geplant vor heute). Überfällige Aufgaben
+    (Frist vor heute) zählen nicht hier, sondern nur bei Überfällig."""
+    if not task_is_open(status):
+        return False
+    if due is not None and due < today:
+        return False
+    return due == today or (planned is not None and planned <= today)
+
+
 def task_sort_key(due: date | None, state: DueState, priority: Priority) -> tuple:
     return (DUE_STATE_RANK[state], due or date.max, PRIORITY_RANK[Priority(priority)])
 

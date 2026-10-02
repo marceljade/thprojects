@@ -45,6 +45,11 @@ def calendar(start: date, end: date, mine: bool = False, assignee_id: int | None
     return views.calendar(db, start, end, mine, assignee_id, include_done)
 
 
+@router.get("/calendar/unplanned", response_model=list[schemas.TaskOut])
+def calendar_unplanned(mine: bool = False, assignee_id: int | None = None, db: Session = Depends(get_db)):
+    return tasks.unplanned(db, mine, assignee_id)
+
+
 @router.get("/schedule", response_model=schemas.ScheduleOut)
 def schedule(start: date | None = None, end: date | None = None, category: str | None = None, project_id: int | None = None,
              include_done: bool = False, db: Session = Depends(get_db)):
@@ -148,6 +153,11 @@ def update_task(task_id: int, data: schemas.TaskUpdate, db: Session = Depends(ge
 def delete_task(task_id: int, db: Session = Depends(get_db)):
     tasks.delete_task(db, task_id)
     return Response(status_code=204)
+
+
+@router.put("/tasks/{task_id}/plan", response_model=schemas.TaskOut)
+def plan_task(task_id: int, data: schemas.TaskPlanIn, db: Session = Depends(get_db)):
+    return tasks.plan_task(db, task_id, data)
 
 
 @router.post("/tasks/{task_id}/complete", response_model=schemas.TaskOut)

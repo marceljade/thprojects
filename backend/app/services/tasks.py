@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from .. import models, scheduling
 from ..enums import DueState, TaskStatus
-from ..schemas import TaskCreate, TaskOut, TaskUpdate
+from ..schemas import TaskCreate, TaskOut, TaskPlanIn, TaskUpdate
 from . import common
 
 
@@ -90,6 +90,9 @@ def list_tasks(db: Session, assignee_id: int | None = None, mine: bool = False, 
                 ws = scheduling.week_start(p.today)
                 if not (o.due_date and ws + scheduling.timedelta(days=7) <= o.due_date <= ws + scheduling.timedelta(days=13)):
                     continue
+            elif bucket == "heute":
+                if not o.is_today:
+                    continue
             elif bucket == "this_week":
                 ws = scheduling.week_start(p.today)
                 if not (o.due_date and ws <= o.due_date <= ws + scheduling.timedelta(days=6) and o.is_open):
@@ -136,7 +139,7 @@ def create_task(db: Session, data: TaskCreate) -> TaskOut:
 
 
 TRACKED = {"status": "Status", "due_date": "Frist", "assignee_id": "Bearbeiter", "priority": "Priorität",
-           "progress": "Fortschritt", "title": "Aufgabe", "start_date": "Start", "waiting_for": "Wartet auf"}
+           "progress": "Fortschritt", "title": "Aufgabe", "start_date": "Start", "waiting_for": "Wartet auf", "planned_date": "Geplant am"}
 
 
 def update_task(db: Session, task_id: int, data: TaskUpdate) -> TaskOut:
@@ -239,6 +242,31 @@ def reorder_tasks(db: Session, project_id: int, task_ids: list[int]) -> list[Tas
     db.commit()
     p = common.params(db)
     return [common.task_out(t, p) for t in sorted(pr.tasks, key=lambda t: (t.sort_order, t.id))]
+
+
+def plan_task(db: Session, task_id: int, data: TaskPlanIn) -> TaskOut:
+    """Drag and Drop im Kalender: nur geplant am ändern, die Frist bleibt."""
+    t = _get(db, task_id)
+    if not scheduling.task_is_open(t.status):
+        raise HTTPException(409, "Erledigte oder entfallene Aufgaben lassen sich nicht planen. Erst wieder öffnen.")
+    old, new = t.planned_date, data.planned_date
+    if old == new:
+        return _load_task_out(db, t.id)
+    f = lambda d: d.strftime("%d.%m.") if d else "–"  # noqa: E731
+    common.log(db, "Aufgabe geplant", project_id=t.project_id, task_id=t.id, field="planned_date", old=old, new=new,
+               details=f"geplant am {f(old)} -> {f(new)}")
+    t.planned_date = new
+    common.touch(t.project)
+    db.commit()
+    return _load_task_out(db, t.id)
+
+
+def unplanned(db: Session, mine: bool = False, assignee_id: int | None = None) -> list[TaskOut]:
+    """Offene Aufgaben ohne Frist und ohne Plantag, nicht wartend, aktuelle Runde. Hoch zuerst, dann nach Projekt."""
+    out = [o for o in list_tasks(db, mine=mine, assignee_id=assignee_id, open_only=True)
+           if o.due_date is None and o.planned_date is None and o.status != TaskStatus.wartet]
+    out.sort(key=lambda o: (scheduling.PRIORITY_RANK[o.priority], o.project_number, o.sort_order, o.id))
+    return out
 
 
 def shift_due(db: Session, task_id: int, workdays: int) -> TaskOut:

@@ -75,11 +75,16 @@ class TaskOut(ORM):
     waiting_on: str
     waiting_since: date | None
     reminder_date: date | None
+    planned_date: date | None
     created_at: datetime
     updated_at: datetime
     round_id: int | None
     # berechnet
     due_state: DueState
+    calendar_date: date | None
+    planned_after_due: bool
+    warnings: list[str]
+    is_today: bool
     days_overdue: int
     kw: int | None
     is_open: bool
@@ -125,12 +130,17 @@ class TaskUpdate(BaseModel):
     waiting_on: str | None = None
     waiting_since: date | None = None
     reminder_date: date | None = None
+    planned_date: date | None = None
     # Felder, die explizit auf NULL gesetzt werden sollen
     clear: list[str] = Field(default_factory=list)
 
 
 class TaskReorder(BaseModel):
     task_ids: list[int]
+
+
+class TaskPlanIn(BaseModel):
+    planned_date: date | None = None   # None = Planung aufheben
 
 
 # ---------------------------------------------------------------- Projects --
@@ -467,12 +477,22 @@ class NotificationOut(BaseModel):
     project_id: int | None = None
 
 
+class CalendarMark(BaseModel):
+    """Nicht verschiebbare Markierung im Kalender: Frist einer anderswo geplanten Aufgabe oder Projektfrist."""
+    kind: str                 # due | project
+    task_id: int | None = None
+    project_id: int
+    project_number: str
+    title: str
+
+
 class CalendarDay(BaseModel):
     date: date
     kw: int
     is_workday: bool
     holiday: str | None
     tasks: list[TaskOut]
+    marks: list[CalendarMark] = Field(default_factory=list)
 
 
 class ScheduleTask(BaseModel):

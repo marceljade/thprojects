@@ -115,7 +115,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-3 xl:grid-cols-6 gap-2 mb-3">
         <Stat label="Überfällig" value={d.counts.overdue} to="/aufgaben?bucket=ueberfaellig" tone="rot" />
-        <Stat label="Heute fällig" value={d.counts.today} to="/aufgaben?bucket=heute" tone="orange" />
+        <Stat label="Heute" value={d.counts.today} to="/aufgaben?bucket=heute" tone="orange" />
         <Stat label="Diese Woche" value={d.counts.this_week} to="/aufgaben?bucket=this_week" />
         <Stat label="Wartet" value={d.counts.waiting_tasks} to="/aufgaben?status=wartet" />
         <Stat label="Aktive Projekte" value={d.counts.active_projects} to="/projekte?filter=aktiv" />

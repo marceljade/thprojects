@@ -16,9 +16,11 @@ export interface Task {
   start_date: string | null; due_date: string | null; completed_at: string | null
   progress: number; weight: number; predecessor_id: number | null; predecessor_open: boolean; sort_order: number
   waiting_for: string; waiting_on: string; waiting_since: string | null; reminder_date: string | null
+  planned_date: string | null
   created_at: string; updated_at: string
   round_id: number | null
   due_state: DueState; days_overdue: number; kw: number | null; is_open: boolean
+  calendar_date: string | null; planned_after_due: boolean; warnings: string[]; is_today: boolean
   round_number: number; is_current_round: boolean
 }
 
@@ -94,7 +96,8 @@ export interface Dashboard {
 
 export interface SearchResult { projects: Project[]; tasks: Task[]; notes: Note[] }
 export interface Notification { level: string; text: string; task_id: number | null; project_id: number | null }
-export interface CalendarDay { date: string; kw: number; is_workday: boolean; holiday: string | null; tasks: Task[] }
+export interface CalendarMark { kind: 'due' | 'project'; task_id: number | null; project_id: number; project_number: string; title: string }
+export interface CalendarDay { date: string; kw: number; is_workday: boolean; holiday: string | null; tasks: Task[]; marks: CalendarMark[] }
 export interface ScheduleTask { id: number; title: string; status: TaskStatus; due_state: DueState; start: string; end: string; assignee_code: string | null; predecessor_open: boolean }
 export interface ScheduleProject { id: number; project_number: string; name: string; signal: Signal; deadline: string | null; progress: number; tasks: ScheduleTask[] }
 export interface Schedule { start: string; end: string; today: string; projects: ScheduleProject[]; holidays: Holiday[] }

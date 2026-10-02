@@ -102,6 +102,7 @@ class Task(Base):
     waiting_on: Mapped[str] = mapped_column(String(200), default="")
     waiting_since: Mapped[date | None] = mapped_column(Date, nullable=True)
     reminder_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    planned_date: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)   # geplant am, die Frist bleibt due_date
     round_id: Mapped[int | None] = mapped_column(ForeignKey("project_rounds.id", ondelete="SET NULL"), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=_now, onupdate=_now)

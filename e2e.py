@@ -174,6 +174,38 @@ with sync_playwright() as pw:
     page.goto(BASE + "/kalender")
     page.wait_for_timeout(500)
     shot(page, "08_kalender")
+
+    # Planen per Drag and Drop in der Wochenansicht: nur "geplant am" ändert sich, die Frist bleibt
+    api.post("/api/tasks", json={"project_id": p1["id"], "title": "Ungeplante Aufgabe", "priority": "hoch"})
+    page.get_by_role("button", name="Woche").click()
+    page.wait_for_timeout(600)
+    ws = today - timedelta(days=today.weekday())
+    src = page.locator('[data-drop]:not([data-drop="unplanned"]) [data-task]').first
+    expect(src).to_be_visible()
+    src_day = src.locator("xpath=ancestor::*[@data-drop][1]").get_attribute("data-drop")
+    task_id = int(src.get_attribute("data-task"))
+    before = api.get(f"/api/tasks/{task_id}").json()
+    target_day = iso(ws + timedelta(days=4 if src_day != iso(ws + timedelta(days=4)) else 3))
+    src.drag_to(page.locator(f'[data-drop="{target_day}"]'))
+    page.wait_for_timeout(800)
+    after = api.get(f"/api/tasks/{task_id}").json()
+    assert after["planned_date"] == target_day and after["due_date"] == before["due_date"], (before, after)
+    expect(page.locator(f'[data-drop="{target_day}"] [data-task="{task_id}"]')).to_be_visible()
+    # aus der Leiste "Ungeplant" auf einen Tag ziehen, dann zurück in die Leiste
+    un = page.locator('[data-drop="unplanned"] [data-task]').first
+    expect(un).to_be_visible()
+    un_id = int(un.get_attribute("data-task"))
+    un.drag_to(page.locator(f'[data-drop="{iso(ws + timedelta(days=1))}"]'))
+    page.wait_for_timeout(800)
+    assert api.get(f"/api/tasks/{un_id}").json()["planned_date"] == iso(ws + timedelta(days=1))
+    shot(page, "08b_kalender_woche_dnd")
+    page.locator(f'[data-task="{un_id}"]').first.drag_to(page.locator('[data-drop="unplanned"]'))
+    page.wait_for_timeout(800)
+    assert api.get(f"/api/tasks/{un_id}").json()["planned_date"] is None
+    acts = api.get(f"/api/projects/{p1['id']}/activity").json()
+    assert any(a["action"] == "Aufgabe geplant" for a in acts)
+    page.get_by_role("button", name="Monat").click()
+    page.wait_for_timeout(500)
     page.goto(BASE + "/zeitplan")
     page.wait_for_timeout(600)
     shot(page, "09_zeitplan")

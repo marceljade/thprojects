@@ -37,6 +37,8 @@ export const useActivity = (p: Record<string, string | number | boolean | null |
   useQuery({ queryKey: keys.activity(p), queryFn: () => api.get<Activity[]>('/api/activity' + qs(p)) })
 export const useCalendar = (start: string, end: string, p: Record<string, string | number | boolean | null | undefined> = {}) =>
   useQuery({ queryKey: keys.calendar({ start, end, ...p }), queryFn: () => api.get<CalendarDay[]>('/api/calendar' + qs({ start, end, ...p })) })
+export const useUnplanned = (p: Record<string, string | number | boolean | null | undefined> = {}) =>
+  useQuery({ queryKey: ['unplanned', p] as const, queryFn: () => api.get<Task[]>('/api/calendar/unplanned' + qs(p)) })
 export const useSchedule = (p: Record<string, string | number | boolean | null | undefined> = {}) =>
   useQuery({ queryKey: keys.schedule(p), queryFn: () => api.get<Schedule>('/api/schedule' + qs(p)) })
 export const useSearch = (q: string) =>
@@ -54,6 +56,7 @@ function useMut<TArgs, TOut>(fn: (a: TArgs) => Promise<TOut>, onDone?: (out: TOu
 
 export const useCompleteTask = () => useMut((id: number) => api.post<Task>(`/api/tasks/${id}/complete`))
 export const useReopenTask = () => useMut((id: number) => api.post<Task>(`/api/tasks/${id}/reopen`))
+export const usePlanTask = () => useMut(({ id, planned_date }: { id: number; planned_date: string | null }) => api.put<Task>(`/api/tasks/${id}/plan`, { planned_date }))
 export const useShiftTask = () => useMut(({ id, workdays }: { id: number; workdays: number }) => api.post<Task>(`/api/tasks/${id}/shift?workdays=${workdays}`))
 export const useUpdateTask = () => useMut(({ id, data }: { id: number; data: Record<string, unknown> }) => api.put<Task>(`/api/tasks/${id}`, data))
 export const useCreateTask = () => useMut((data: Record<string, unknown>) => api.post<Task>('/api/tasks', data))
