@@ -12,8 +12,10 @@ from . import common
 
 
 def _all_tasks(db: Session) -> list[models.Task]:
-    stmt = select(models.Task).options(selectinload(models.Task.project).selectinload(models.Project.tasks))
-    return list(db.scalars(stmt).unique().all())
+    """Alle Aufgaben der aktuellen Runde je Projekt. Alte Runden tauchen in Tagesansichten nicht auf."""
+    stmt = select(models.Task).options(selectinload(models.Task.project).selectinload(models.Project.tasks),
+                                       selectinload(models.Task.project).selectinload(models.Project.rounds))
+    return [t for t in db.scalars(stmt).unique().all() if common.task_in_current_round(t)]
 
 
 def build(db: Session) -> DashboardOut:

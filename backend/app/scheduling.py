@@ -98,6 +98,14 @@ def effective_progress(status: TaskStatus, progress: int) -> int:
     return max(0, min(100, int(progress or 0)))
 
 
+def round_tasks(tasks: list, round_id: int | None) -> list:
+    """Aufgaben der angegebenen Runde. Ohne Runde (None) zählen alle. Aufgaben ohne round_id
+    gelten als aktuelle Runde (Altbestand vor der Migration)."""
+    if round_id is None:
+        return list(tasks)
+    return [t for t in tasks if getattr(t, "round_id", None) in (None, round_id)]
+
+
 def project_progress(tasks: list, project_status: ProjectStatus) -> int:
     """tasks: Objekte mit status, progress, weight. Gewichtet, Entfällt zählt nicht."""
     relevant = [t for t in tasks if TaskStatus(t.status) != TaskStatus.entfaellt]
@@ -142,9 +150,11 @@ class ProjectAssessment:
     waiting_count: int
 
 
-def assess_project(project, tasks: list, p: Params) -> ProjectAssessment:
+def assess_project(project, tasks: list, p: Params, round_id: int | None = None) -> ProjectAssessment:
     """project: Objekt mit status, assignee_id, order_date, offered_weeks, target_deadline.
-    tasks: Objekte mit id, title, status, progress, weight, due_date."""
+    tasks: Objekte mit id, title, status, progress, weight, due_date, round_id.
+    round_id: nur die Aufgaben dieser Runde zählen (Fortschritt, Ampel, Warnungen, nächste Frist)."""
+    tasks = round_tasks(tasks, round_id)
     status = ProjectStatus(project.status)
     active = project_is_active(status)
     deadline = effective_deadline(project.target_deadline, project.order_date, project.offered_weeks)

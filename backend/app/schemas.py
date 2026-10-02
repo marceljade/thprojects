@@ -77,11 +77,14 @@ class TaskOut(ORM):
     reminder_date: date | None
     created_at: datetime
     updated_at: datetime
+    round_id: int | None
     # berechnet
     due_state: DueState
     days_overdue: int
     kw: int | None
     is_open: bool
+    round_number: int
+    is_current_round: bool
 
 
 class TaskCreate(BaseModel):
@@ -171,12 +174,47 @@ class ProjectOut(ORM):
     next_due: date | None
     expected_folder_name: str
     folder_matches: bool
+    round_number: int
+    round_title: str
+
+
+class RoundOut(ORM):
+    id: int
+    project_id: int
+    number: int
+    title: str
+    status: ProjectStatus
+    request_date: date | None
+    offer_date: date | None
+    order_date: date | None
+    offered_weeks: float | None
+    target_deadline: date | None
+    closed_at: date | None
+    created_at: datetime
+    task_count: int
+    open_count: int
+    progress: int
 
 
 class ProjectDetail(ProjectOut):
     tasks: list[TaskOut]
     notes: list[NoteOut]
+    rounds: list[RoundOut]
     folder_note: str | None = None
+
+
+class FollowUpIn(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    status: ProjectStatus = ProjectStatus.anfrage
+    request_date: date | None = None
+    template_id: int | None = None
+
+    @field_validator("status")
+    @classmethod
+    def _status(cls, v: ProjectStatus) -> ProjectStatus:
+        if v not in (ProjectStatus.anfrage, ProjectStatus.angebot):
+            raise ValueError("Ein Folgeauftrag beginnt als Anfrage oder Angebot.")
+        return v
 
 
 class ProjectCreate(BaseModel):

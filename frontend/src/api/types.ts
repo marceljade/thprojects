@@ -17,7 +17,9 @@ export interface Task {
   progress: number; weight: number; predecessor_id: number | null; predecessor_open: boolean; sort_order: number
   waiting_for: string; waiting_on: string; waiting_since: string | null; reminder_date: string | null
   created_at: string; updated_at: string
+  round_id: number | null
   due_state: DueState; days_overdue: number; kw: number | null; is_open: boolean
+  round_number: number; is_current_round: boolean
 }
 
 export interface Project {
@@ -32,9 +34,16 @@ export interface Project {
   task_count: number; open_count: number; overdue_count: number; waiting_count: number
   next_task_id: number | null; next_task_title: string | null; next_due: string | null
   expected_folder_name: string; folder_matches: boolean
+  round_number: number; round_title: string
 }
 
-export interface ProjectDetail extends Project { tasks: Task[]; notes: Note[]; folder_note: string | null }
+export interface Round {
+  id: number; project_id: number; number: number; title: string; status: ProjectStatus
+  request_date: string | null; offer_date: string | null; order_date: string | null; offered_weeks: number | null; target_deadline: string | null
+  closed_at: string | null; created_at: string; task_count: number; open_count: number; progress: number
+}
+
+export interface ProjectDetail extends Project { tasks: Task[]; notes: Note[]; rounds: Round[]; folder_note: string | null }
 
 export interface Note {
   id: number; project_id: number; project_number: string; task_id: number | null; task_title: string | null

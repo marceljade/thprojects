@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from .. import models, scheduling
 from ..enums import TaskStatus
-from ..schemas import ActivityOut, NoteOut, ProjectOut, TaskOut, SettingsOut
+from ..schemas import ActivityOut, NoteOut, ProjectOut, RoundOut, TaskOut, SettingsOut
 
 DEFAULT_WIDGETS = {"attention": True, "today": True, "overdue": True, "upcoming": True,
                    "waiting": True, "projects": True, "active_projects": True, "activity": True}
@@ -86,11 +86,52 @@ def touch(project: models.Project) -> None:
     project.updated_at = datetime.now()
 
 
+# ------------------------------------------------------------------ Runden --
+def current_round(pr: models.Project) -> models.ProjectRound | None:
+    """Aktuelle Runde = höchste Nummer. None nur, bevor die Migration gelaufen ist."""
+    return max(pr.rounds, key=lambda r: r.number) if pr.rounds else None
+
+
+def current_round_id(pr: models.Project) -> int | None:
+    r = current_round(pr)
+    return r.id if r else None
+
+
+def task_in_current_round(t: models.Task) -> bool:
+    if not t.project or t.round_id is None:
+        return True
+    return t.round_id == current_round_id(t.project)
+
+
+def sync_round(pr: models.Project) -> None:
+    """Projektfelder sind die Quelle, die aktuelle Runde spiegelt sie."""
+    r = current_round(pr)
+    if r is None:
+        return
+    r.status = pr.status
+    r.request_date = pr.request_date
+    r.offer_date = pr.offer_date
+    r.order_date = pr.order_date
+    r.offered_weeks = pr.offered_weeks
+    r.target_deadline = pr.target_deadline
+
+
+def round_out(r: models.ProjectRound, pr: models.Project) -> RoundOut:
+    tasks = [t for t in pr.tasks if t.round_id == r.id]
+    return RoundOut(id=r.id, project_id=r.project_id, number=r.number, title=r.title, status=r.status,
+                    request_date=r.request_date, offer_date=r.offer_date, order_date=r.order_date, offered_weeks=r.offered_weeks,
+                    target_deadline=r.target_deadline, closed_at=r.closed_at, created_at=r.created_at,
+                    task_count=sum(1 for t in tasks if TaskStatus(t.status) != TaskStatus.entfaellt),
+                    open_count=sum(1 for t in tasks if scheduling.task_is_open(t.status)),
+                    progress=scheduling.project_progress(tasks, r.status))
+
+
 # ------------------------------------------------------------ Serialisierung --
 def task_out(t: models.Task, p: scheduling.Params, pred_open: bool | None = None) -> TaskOut:
     state, overdue = scheduling.due_state(t.status, t.due_date, p)
     if pred_open is None:
         pred_open = bool(t.predecessor_id) and _pred_open(t)
+    rnd = next((r for r in t.project.rounds if r.id == t.round_id), None) if t.project and t.round_id else None
     return TaskOut(
         id=t.id, project_id=t.project_id,
         project_number=t.project.project_number if t.project else "",
@@ -108,6 +149,8 @@ def task_out(t: models.Task, p: scheduling.Params, pred_open: bool | None = None
         due_state=state, days_overdue=overdue,
         kw=scheduling.iso_week(t.due_date)[1] if t.due_date else None,
         is_open=scheduling.task_is_open(t.status),
+        round_id=t.round_id, round_number=rnd.number if rnd else (current_round(t.project).number if t.project and t.project.rounds else 1),
+        is_current_round=task_in_current_round(t),
     )
 
 
@@ -122,7 +165,8 @@ def _pred_open(t: models.Task) -> bool:
 
 
 def project_out(pr: models.Project, p: scheduling.Params) -> ProjectOut:
-    a = scheduling.assess_project(pr, pr.tasks, p)
+    rnd = current_round(pr)
+    a = scheduling.assess_project(pr, pr.tasks, p, rnd.id if rnd else None)
     return ProjectOut(
         id=pr.id, project_number=pr.project_number, name=pr.name, client=pr.client or "",
         category=pr.category, assignee_id=pr.assignee_id,
@@ -139,6 +183,7 @@ def project_out(pr: models.Project, p: scheduling.Params) -> ProjectOut:
         overdue_count=a.overdue_count, waiting_count=a.waiting_count, next_task_id=a.next_task_id,
         next_task_title=a.next_task_title, next_due=a.next_due,
         expected_folder_name=_folders().expected_folder_name(pr), folder_matches=_folders().folder_matches(pr),
+        round_number=rnd.number if rnd else 1, round_title=rnd.title if rnd else "Erstauftrag",
     )
 
 
@@ -165,7 +210,7 @@ def activity_out(a: models.ActivityLog) -> ActivityOut:
 
 
 def load_projects(db: Session, ids: list[int] | None = None) -> list[models.Project]:
-    stmt = select(models.Project).options(selectinload(models.Project.tasks))
+    stmt = select(models.Project).options(selectinload(models.Project.tasks), selectinload(models.Project.rounds))
     if ids is not None:
         stmt = stmt.where(models.Project.id.in_(ids))
     return list(db.scalars(stmt).unique().all())

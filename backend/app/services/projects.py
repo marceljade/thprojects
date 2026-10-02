@@ -9,13 +9,13 @@ from sqlalchemy.orm import Session, selectinload
 
 from .. import models, scheduling
 from ..enums import ProjectStatus, TaskStatus
-from ..schemas import ProjectCreate, ProjectDetail, ProjectOut, ProjectUpdate
+from ..schemas import FollowUpIn, ProjectCreate, ProjectDetail, ProjectOut, ProjectUpdate
 from . import common, folders
 from .tasks import complete_task_obj, create_task_obj
 
 
 def _get(db: Session, project_id: int) -> models.Project:
-    pr = db.scalar(select(models.Project).options(selectinload(models.Project.tasks)).where(models.Project.id == project_id))
+    pr = db.scalar(select(models.Project).options(selectinload(models.Project.tasks), selectinload(models.Project.rounds)).where(models.Project.id == project_id))
     if pr is None:
         raise HTTPException(404, f"Projekt {project_id} gibt es nicht.")
     return pr
@@ -63,7 +63,7 @@ def get_project(db: Session, project_id: int, folder_note: str | None = None) ->
     tasks = sorted(pr.tasks, key=lambda t: (t.sort_order, t.id))
     notes = db.scalars(select(models.Note).where(models.Note.project_id == pr.id).order_by(models.Note.created_at.desc(), models.Note.id.desc())).all()
     return ProjectDetail(**base.model_dump(), tasks=[common.task_out(t, p) for t in tasks], notes=[common.note_out(n) for n in notes],
-                         folder_note=folder_note or folders.folder_hint(db, pr))
+                         rounds=[common.round_out(r, pr) for r in pr.rounds], folder_note=folder_note or folders.folder_hint(db, pr))
 
 
 def _check_number(db: Session, number: str, exclude_id: int | None = None) -> None:
@@ -89,6 +89,10 @@ def create_project(db: Session, data: ProjectCreate) -> ProjectDetail:
         folder = folders.find_folder(db, pr.project_number) or ""
     pr.folder_path = folder
     db.add(pr)
+    db.flush()
+    pr.rounds.append(models.ProjectRound(project_id=pr.id, number=1, title="Erstauftrag", status=pr.status, request_date=pr.request_date,
+                                         offer_date=pr.offer_date, order_date=pr.order_date, offered_weeks=pr.offered_weeks,
+                                         target_deadline=pr.target_deadline))
     db.flush()
     common.log(db, "Projekt angelegt", project_id=pr.id, field="status", new=pr.status)
     note = None
@@ -126,6 +130,7 @@ def update_project(db: Session, project_id: int, data: ProjectUpdate) -> Project
         pr.status = ProjectStatus.beauftragt
     if "status" in changes and changes["status"] == ProjectStatus.abgeschlossen and pr.completed_at is None:
         pr.completed_at = date.today()
+    common.sync_round(pr)
     common.touch(pr)
     db.commit()
     return get_project(db, pr.id)
@@ -157,6 +162,39 @@ def complete_project(db: Session, project_id: int, open_tasks: str) -> ProjectDe
     common.log(db, "Projekt abgeschlossen", project_id=pr.id, field="status", old=pr.status, new=ProjectStatus.abgeschlossen)
     pr.status = ProjectStatus.abgeschlossen
     pr.completed_at = date.today()
+    common.sync_round(pr)
+    common.touch(pr)
+    db.commit()
+    return get_project(db, pr.id)
+
+
+# ------------------------------------------------------------- Folgeauftrag --
+def start_follow_up(db: Session, project_id: int, data: FollowUpIn) -> ProjectDetail:
+    """Neuer Durchgang im selben Projekt (gleiche Nummer, gleicher Ordner). Die bisherige Runde wird
+    abgeschlossen, alte Aufgaben und Notizen bleiben. Auf dem NAS ändert sich nichts (Invariante 11)."""
+    pr = _get(db, project_id)
+    cur = common.current_round(pr)
+    if pr.status != ProjectStatus.abgeschlossen or (cur and cur.status != ProjectStatus.abgeschlossen):
+        raise HTTPException(409, "Ein Folgeauftrag geht erst, wenn das Projekt abgeschlossen ist. Schließe den laufenden Durchgang zuerst ab.")
+    if cur is not None and cur.closed_at is None:
+        cur.closed_at = pr.completed_at or date.today()
+    number = (cur.number if cur else 0) + 1
+    new = models.ProjectRound(project_id=pr.id, number=number, title=data.title.strip(), status=data.status,
+                              request_date=data.request_date or date.today())
+    pr.rounds.append(new)
+    db.flush()
+    pr.status = data.status
+    pr.request_date = new.request_date
+    pr.offer_date = None
+    pr.order_date = None
+    pr.offered_weeks = None
+    pr.target_deadline = None
+    pr.completed_at = None
+    common.log(db, "Folgeauftrag gestartet", project_id=pr.id, field="runde", old=cur.number if cur else "", new=number,
+               details=new.title)
+    common.log(db, "Projekt geändert", project_id=pr.id, field="status", old=ProjectStatus.abgeschlossen, new=pr.status)
+    if data.template_id:
+        apply_template(db, pr, data.template_id, None, True)
     common.touch(pr)
     db.commit()
     return get_project(db, pr.id)

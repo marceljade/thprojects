@@ -43,3 +43,21 @@ def test_assess():
     assert a.signal == Signal.grau and a.warnings == []
     a = s.assess_project(NS(status=ProjectStatus.abgeschlossen, assignee_id=None, order_date=None, offered_weeks=None, target_deadline=None), [], P)
     assert a.signal == Signal.fertig and a.progress == 100
+
+
+def test_assess_only_current_round():
+    """Fortschritt, Ampel und nächste Frist zählen nur die Aufgaben der angegebenen Runde."""
+    old = [NS(id=1, title="Alt erledigt", status=TaskStatus.erledigt, due_date=date(2026, 1, 10), weight=1, progress=100, sort_order=1, round_id=1),
+           NS(id=2, title="Alt überfällig", status=TaskStatus.in_bearbeitung, due_date=date(2026, 1, 20), weight=1, progress=0, sort_order=2, round_id=1)]
+    new = [NS(id=3, title="Neu", status=TaskStatus.nicht_begonnen, due_date=date(2026, 10, 20), weight=1, progress=0, sort_order=3, round_id=2),
+           NS(id=4, title="Neu erledigt", status=TaskStatus.erledigt, due_date=None, weight=1, progress=100, sort_order=4, round_id=2)]
+    pr = NS(status=ProjectStatus.in_bearbeitung, assignee_id=1, order_date=date(2026, 10, 1), offered_weeks=6, target_deadline=None)
+    assert [t.id for t in s.round_tasks(old + new, 2)] == [3, 4]
+    assert len(s.round_tasks(old + new, None)) == 4
+    a = s.assess_project(pr, old + new, P, round_id=2)
+    assert a.progress == 50 and a.signal == Signal.gruen and a.overdue_count == 0 and a.next_task_id == 3 and a.task_count == 2
+    # ohne Runde zählt alles, die alte überfällige Aufgabe macht das Projekt rot
+    assert s.assess_project(pr, old + new, P).signal == Signal.rot
+    # Aufgaben ohne round_id (Altbestand) gelten als aktuelle Runde
+    legacy = NS(id=5, title="Ohne Runde", status=TaskStatus.nicht_begonnen, due_date=None, weight=1, progress=0, sort_order=5, round_id=None)
+    assert [t.id for t in s.round_tasks(new + [legacy], 2)] == [3, 4, 5]

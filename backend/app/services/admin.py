@@ -232,11 +232,11 @@ def export_excel(db: Session) -> bytes:
                       o.order_date, o.offered_weeks, o.contractual_deadline, o.target_deadline, o.deadline, o.completed_at,
                       o.progress, o.task_count, o.open_count, o.overdue_count, o.next_task_title, o.next_due,
                       {"rot": "Rot", "gelb": "Gelb", "gruen": "Grün", "grau": "Nicht aktiv", "fertig": "Abgeschlossen"}[o.signal.value],
-                      " · ".join(o.reasons + o.warnings), o.folder_path, o.remarks])
+                      " · ".join(o.reasons + o.warnings), o.folder_path, o.remarks, o.round_number, o.round_title])
     sheet("Projekte", ["Projektnr", "Projektname", "Kategorie", "Auftraggeber", "Projektleiter", "Beteiligte", "Status", "Priorität",
                        "Anfrage", "Angebot", "Auftrag", "Dauer (Wochen)", "Fertigstellung vertraglich", "Fertigstellung Ziel", "Fertigstellung",
                        "Fertigstellung tatsächlich", "Fortschritt %", "Aufgaben", "Offen", "Überfällig", "Nächste Aufgabe", "Nächste Frist",
-                       "Ampel", "Hinweise", "Projektordner", "Bemerkung"], prows, "tblProjekte")
+                       "Ampel", "Hinweise", "Projektordner", "Bemerkung", "Runde", "Runde Titel"], prows, "tblProjekte")
 
     trows = []
     stmt = select(models.Task).options(selectinload(models.Task.project).selectinload(models.Project.tasks)).order_by(models.Task.project_id, models.Task.sort_order)
@@ -244,9 +244,9 @@ def export_excel(db: Session) -> bytes:
         o = common.task_out(t, p)
         trows.append([o.id, o.project_number, o.project_name, o.title, o.task_type_name, o.assignee_code, TASK_STATUS_LABELS[TaskStatus(o.status)],
                       PRIORITY_LABELS[Priority(o.priority)], o.start_date, o.due_date, o.kw, o.completed_at, o.progress, o.weight,
-                      o.predecessor_id, DUE_STATE_LABELS[o.due_state], o.waiting_for, o.waiting_on, o.waiting_since, o.description])
+                      o.predecessor_id, DUE_STATE_LABELS[o.due_state], o.waiting_for, o.waiting_on, o.waiting_since, o.description, o.round_number])
     sheet("Aufgaben", ["ID", "Projektnr", "Projektname", "Aufgabe", "Aufgabenart", "Verantwortlich", "Status", "Priorität", "Start", "Frist", "KW",
-                       "Erledigt am", "Fortschritt %", "Gewicht", "Vorgänger", "Fälligkeit", "Wartet auf", "Von", "Seit", "Beschreibung"], trows, "tblAufgaben")
+                       "Erledigt am", "Fortschritt %", "Gewicht", "Vorgänger", "Fälligkeit", "Wartet auf", "Von", "Seit", "Beschreibung", "Runde"], trows, "tblAufgaben")
 
     nrows = [[n.id, n.project.project_number if n.project else "", n.task.title if n.task else "", n.author.code if n.author else "", n.created_at, n.content]
              for n in db.scalars(select(models.Note).order_by(models.Note.created_at)).all()]
@@ -269,19 +269,19 @@ def export_csv(db: Session, what: str) -> str:
     w = csv.writer(buf, delimiter=";", lineterminator="\n")
     if what == "projects":
         w.writerow(["Projektnr", "Projektname", "Kategorie", "Auftraggeber", "Projektleiter", "Status", "Priorität", "Anfrage", "Angebot", "Auftrag",
-                    "Dauer (Wochen)", "Fertigstellung", "Fortschritt %", "Nächste Aufgabe", "Nächste Frist", "Ampel", "Projektordner"])
+                    "Dauer (Wochen)", "Fertigstellung", "Fortschritt %", "Nächste Aufgabe", "Nächste Frist", "Ampel", "Projektordner", "Runde"])
         for pr in common.load_projects(db):
             o = common.project_out(pr, p)
             w.writerow([o.project_number, o.name, o.category.value, o.client, o.assignee_code or "", o.status.value, o.priority.value,
                         _d(o.request_date), _d(o.offer_date), _d(o.order_date), o.offered_weeks or "", _d(o.deadline), o.progress,
-                        o.next_task_title or "", _d(o.next_due), o.signal.value, o.folder_path])
+                        o.next_task_title or "", _d(o.next_due), o.signal.value, o.folder_path, o.round_number])
     else:
-        w.writerow(["ID", "Projektnr", "Aufgabe", "Aufgabenart", "Verantwortlich", "Status", "Priorität", "Start", "Frist", "KW", "Erledigt am", "Fortschritt %", "Gewicht"])
+        w.writerow(["ID", "Projektnr", "Aufgabe", "Aufgabenart", "Verantwortlich", "Status", "Priorität", "Start", "Frist", "KW", "Erledigt am", "Fortschritt %", "Gewicht", "Runde"])
         stmt = select(models.Task).options(selectinload(models.Task.project).selectinload(models.Project.tasks)).order_by(models.Task.project_id, models.Task.sort_order)
         for t in db.scalars(stmt).unique().all():
             o = common.task_out(t, p)
             w.writerow([o.id, o.project_number, o.title, o.task_type_name or "", o.assignee_code or "", o.status.value, o.priority.value,
-                        _d(o.start_date), _d(o.due_date), o.kw or "", _d(o.completed_at), o.progress, o.weight])
+                        _d(o.start_date), _d(o.due_date), o.kw or "", _d(o.completed_at), o.progress, o.weight, o.round_number])
     return buf.getvalue()
 
 

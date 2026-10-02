@@ -44,6 +44,16 @@ In jedes Datumsfeld kannst du ein Datum aus der Zwischenablage einfügen (`Strg+
 - **Kategorien**: WEA-Vermessung · Messung · Gutachten/Prognose · Intern. Steuern Filter, Zeitplan und den Vorlagenvorschlag.
 - **Historie**: Anlegen, Erledigen, Status-, Frist-, Bearbeiter-, Prioritätsänderungen, Notizen, Vorlagen.
 
+## Folgeaufträge
+
+Ein Projekt ist abgeschlossen, später kommt zum Beispiel eine Planänderung. Dann beginnt im selben Projekt ein neuer Durchgang mit derselben Projektnummer und demselben Ordner: Anfrage, Angebot, Auftrag, Bearbeitung, Abschluss.
+
+- **Starten**: auf der Projektseite eines abgeschlossenen Projekts „Folgeauftrag starten", Titel (z. B. „Planänderung 2026"), Startstatus Anfrage oder Angebot, Datum und optional eine Vorlage. Die bisherige Runde wird abgeschlossen, das Projekt steht wieder auf Anfrage, Auftragsdatum, Dauer und Frist sind leer.
+- **Runden**: über der Aufgabenliste schaltest du zwischen „1 Erstauftrag", „2 Planänderung 2026" usw. um. Die aktuelle Runde ist vorausgewählt. Frühere Runden sind nur zum Nachlesen, ihre Aufgaben lassen sich öffnen, aber nicht abhaken oder verschieben.
+- **Tagesansicht**: Dashboard, Aufgabenliste, Kalender und Zeitplan zeigen nur die Aufgaben der aktuellen Runde. Status, Frist, Fortschritt und Ampel eines Projekts beziehen sich immer auf die aktuelle Runde. Ab Runde 2 steht hinter dem Projektnamen ein kleiner Chip „Folgeauftrag 2".
+- **Notizen** bleiben projektweit sichtbar, die Historie zeigt den Rundenwechsel. Der Export hat eine Spalte „Runde".
+- Auf dem NAS ändert sich nichts. Als erwarteter Ordnername gilt ab Runde 2 immer die Phase Auftrag, auch wenn die neue Runde noch Anfrage ist.
+
 ## Projektordner
 
 Die App verändert auf dem NAS nichts. Sie legt keine Ordner an, benennt keine um, verschiebt und löscht nichts. Sie liest nur: den Ordner zur Projektnummer finden und öffnen. Ordner legst du selbst an und benennst sie selbst um.

@@ -84,6 +84,11 @@ def delete_project(project_id: int, db: Session = Depends(get_db)):
     return Response(status_code=204)
 
 
+@router.post("/projects/{project_id}/follow-up", response_model=schemas.ProjectDetail)
+def follow_up(project_id: int, data: schemas.FollowUpIn, db: Session = Depends(get_db)):
+    return projects.start_follow_up(db, project_id, data)
+
+
 @router.post("/projects/{project_id}/complete", response_model=schemas.ProjectDetail)
 def complete_project(project_id: int, data: schemas.CompleteProject, db: Session = Depends(get_db)):
     return projects.complete_project(db, project_id, data.open_tasks)

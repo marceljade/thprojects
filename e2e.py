@@ -144,6 +144,23 @@ with sync_playwright() as pw:
     page.get_by_role("button", name="Aufgabe speichern").click()
     page.wait_for_timeout(500)
 
+    # Folgeauftrag: Projekt abschließen, neue Runde starten, alte Aufgaben bleiben nur lesbar
+    api.post(f"/api/projects/{p3['id']}/complete", json={"open_tasks": "erledigt"})
+    page.goto(BASE + f"/projekte/{p3['id']}")
+    page.get_by_role("button", name="Folgeauftrag starten").click()
+    dlg = page.get_by_role("dialog")
+    expect(dlg).to_be_visible()
+    dlg.get_by_placeholder("z. B. Planänderung 2026").fill("Planänderung 2026")
+    dlg.get_by_role("button", name="Folgeauftrag starten").click()
+    expect(page.get_by_text("Folgeauftrag 2")).to_be_visible()
+    expect(page.get_by_role("tab", name="2 Planänderung 2026")).to_be_visible()
+    page.wait_for_timeout(500)
+    shot(page, "05c_folgeauftrag")
+    page.get_by_role("tab", name="1 Erstauftrag").click()
+    expect(page.get_by_text("Nur zum Nachlesen")).to_be_visible()
+    shot(page, "05d_folgeauftrag_runde1")
+    assert [e.name for e in (NAS / "2026").iterdir()] == ["26-315 Auftrag WP Moorriem – Vermessung 3x E-160"]
+
     page.goto(BASE + "/aufgaben")
     expect(page.get_by_text("Meine Aufgaben")).to_be_visible()
     shot(page, "06_aufgaben")
