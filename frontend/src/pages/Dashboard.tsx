@@ -5,7 +5,7 @@ import type { Project, Task } from '@/api/types'
 import { useDashboard } from '@/api/hooks'
 import { useUi } from '@/components/layout/Shell'
 import { TaskRow } from '@/components/tasks/TaskRow'
-import { Dot, ProgressBar, Spinner } from '@/components/ui'
+import { Dot, ProgressBar, RoundChip, Spinner } from '@/components/ui'
 import { cx, fmtDate, fmtLong, relDays, signalBg, weekdayLong, fmtDateTime } from '@/lib/format'
 
 function greeting(name: string): string {
@@ -55,6 +55,7 @@ function ProjectLine({ p }: { p: Project }) {
         <Dot className={signalBg(p.signal)} />
         <span className="font-medium shrink-0">{p.project_number}</span>
         <span className="truncate text-muted flex-1">{p.name}</span>
+        <RoundChip n={p.round_number} title={p.round_title} />
         <span className="w-28 shrink-0 hidden sm:block"><ProgressBar value={p.progress} /></span>
       </div>
       {note && <div className="text-[12px] text-muted truncate mt-0.5 pl-[18px]">{note}</div>}
@@ -134,6 +135,7 @@ export default function Dashboard() {
                       <span className="rail bg-rot" />
                       <span className="font-medium">{p.project_number}</span>
                       <span className="truncate text-muted">{p.name}</span>
+                      <RoundChip n={p.round_number} title={p.round_title} />
                       <span className="ml-auto text-[12px] text-muted shrink-0">{p.reasons.join(', ')}</span>
                     </Link>
                   ))}

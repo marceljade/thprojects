@@ -113,6 +113,12 @@ export function Select({ value, onChange, options, placeholder, className, disab
 }
 
 /* ------------------------------------------------------------- Anzeigen */
+/** Dezenter Hinweis ab der zweiten Runde eines Projekts (Folgeauftrag). */
+export function RoundChip({ n, title, className }: { n: number; title?: string; className?: string }) {
+  if (n < 2) return null
+  return <span className={cx('inline-flex items-center h-[18px] px-1.5 rounded-full border text-[10.5px] text-muted whitespace-nowrap shrink-0', className)} title={title ? `Runde ${n}: ${title}` : `Runde ${n}`}>Folgeauftrag {n}</span>
+}
+
 export function ProgressBar({ value, className, size = 'sm' }: { value: number; className?: string; size?: 'sm' | 'md' }) {
   return (
     <div className={cx('flex items-center gap-2', className)} title={`${value} %`}>

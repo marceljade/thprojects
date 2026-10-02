@@ -52,9 +52,10 @@ def schedule(db: Session, start: date | None = None, end: date | None = None, ca
             continue
         if category and pr.category not in category.split(","):
             continue
-        a = scheduling.assess_project(pr, pr.tasks, p)
+        rid = common.current_round_id(pr)
+        a = scheduling.assess_project(pr, pr.tasks, p, rid)
         rows = []
-        for t in sorted(pr.tasks, key=lambda t: (t.sort_order, t.id)):
+        for t in sorted(scheduling.round_tasks(pr.tasks, rid), key=lambda t: (t.sort_order, t.id)):
             if not include_done and not scheduling.task_is_open(t.status) and not project_id:
                 continue
             if not t.due_date and not t.start_date:
@@ -96,5 +97,5 @@ def search(db: Session, q: str, limit: int = 8) -> SearchOut:
         ids = [u.id for u in users]
         prs = list(prs) + [pr for pr in common.load_projects(db) if pr.assignee_id in ids and pr not in prs][:limit]
     return SearchOut(projects=[common.project_out(pr, p) for pr in prs],
-                     tasks=[common.task_out(t, p) for t in tasks],
+                     tasks=[common.task_out(t, p) for t in tasks if common.task_in_current_round(t)],
                      notes=[common.note_out(n) for n in notes])

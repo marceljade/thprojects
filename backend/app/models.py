@@ -57,6 +57,28 @@ class Project(Base):
     assignee: Mapped[User | None] = relationship("User", lazy="joined")
     tasks: Mapped[list[Task]] = relationship("Task", back_populates="project", cascade="all, delete-orphan", order_by="Task.sort_order, Task.id")
     notes: Mapped[list[Note]] = relationship("Note", back_populates="project", cascade="all, delete-orphan")
+    rounds: Mapped[list[ProjectRound]] = relationship("ProjectRound", back_populates="project", cascade="all, delete-orphan", order_by="ProjectRound.number")
+
+
+class ProjectRound(Base):
+    """Durchgang eines Projekts: Runde 1 ist der Erstauftrag, jeder Folgeauftrag (z. B. Planänderung) eine weitere Runde.
+    Die Projektfelder status, Daten und Frist spiegeln immer die aktuelle Runde (höchste Nummer)."""
+    __tablename__ = "project_rounds"
+    __table_args__ = (UniqueConstraint("project_id", "number", name="uq_round_number"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), index=True)
+    number: Mapped[int] = mapped_column(Integer, default=1)
+    title: Mapped[str] = mapped_column(String(200), default="Erstauftrag")
+    status: Mapped[ProjectStatus] = mapped_column(String(30), default=ProjectStatus.anfrage)
+    request_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    offer_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    order_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    offered_weeks: Mapped[float | None] = mapped_column(Float, nullable=True)
+    target_deadline: Mapped[date | None] = mapped_column(Date, nullable=True)
+    closed_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+    project: Mapped[Project] = relationship("Project", back_populates="rounds")
 
 
 class Task(Base):
@@ -80,6 +102,7 @@ class Task(Base):
     waiting_on: Mapped[str] = mapped_column(String(200), default="")
     waiting_since: Mapped[date | None] = mapped_column(Date, nullable=True)
     reminder_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    round_id: Mapped[int | None] = mapped_column(ForeignKey("project_rounds.id", ondelete="SET NULL"), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=_now, onupdate=_now)
 

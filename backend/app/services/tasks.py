@@ -38,6 +38,7 @@ def create_task_obj(db: Session, project: models.Project, title: str, task_type_
         predecessor_id=predecessor_id, sort_order=sort_order, description=description or "",
         waiting_for=waiting_for or "", waiting_on=waiting_on or "", waiting_since=waiting_since,
         reminder_date=reminder_date, completed_at=date.today() if status == TaskStatus.erledigt else None,
+        round_id=common.current_round_id(project),
     )
     db.add(t)
     db.flush()
@@ -80,6 +81,8 @@ def list_tasks(db: Session, assignee_id: int | None = None, mine: bool = False, 
     out = []
     for t in rows:
         if category and t.project and t.project.category not in category.split(","):
+            continue
+        if not common.task_in_current_round(t):
             continue
         o = common.task_out(t, p)
         if bucket:

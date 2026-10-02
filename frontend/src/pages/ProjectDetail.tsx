@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowDown, ArrowUp, CheckCheck, Copy, FolderOpen, LayoutTemplate, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, CheckCheck, Copy, FolderOpen, LayoutTemplate, Pencil, Plus, Repeat, Trash2 } from 'lucide-react'
 import type { Task } from '@/api/types'
-import { useApplyTemplate, useCompleteProject, useCreateNote, useDeleteNote, useDeleteProject, useMeta, useOpenFolder, useProject, useReorderTasks, useSchedule, useUpdateProject } from '@/api/hooks'
+import { useApplyTemplate, useCompleteProject, useCreateNote, useDeleteNote, useDeleteProject, useFollowUp, useMeta, useOpenFolder, useProject, useReorderTasks, useSchedule, useUpdateProject } from '@/api/hooks'
 import { useUi } from '@/components/layout/Shell'
 import { Gantt } from '@/components/schedule/Gantt'
 import { PriorityMark } from '@/components/tasks/TaskRow'
-import { CheckCircle, Confirm, DateInput, Dialog, Dot, Field, ProgressBar, Select, Spinner, useToast } from '@/components/ui'
+import { CheckCircle, Confirm, DateInput, Dialog, Dot, Field, ProgressBar, RoundChip, Select, Spinner, useToast } from '@/components/ui'
 import { useCompleteTask, useReopenTask } from '@/api/hooks'
-import { CATEGORY, cx, dueColor, dueLabel, fmtDate, fmtDateTime, PRIORITY, PROJECT_STATUS, signalBg, SIGNAL, TASK_STATUS } from '@/lib/format'
+import { CATEGORY, cx, dueColor, dueLabel, fmtDate, fmtDateTime, PRIORITY, PROJECT_STATUS, signalBg, SIGNAL, TASK_STATUS, todayIso } from '@/lib/format'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import type { Activity } from '@/api/types'
@@ -41,18 +41,26 @@ export default function ProjectDetail() {
   const [tplId, setTplId] = useState('')
   const [tplDeadline, setTplDeadline] = useState('')
   const [showDone, setShowDone] = useState(true)
+  const [roundSel, setRoundSel] = useState<number | null>(null)
+  const followUp = useFollowUp()
+  const [fuDlg, setFuDlg] = useState(false)
+  const [fu, setFu] = useState({ title: '', status: 'anfrage', request_date: todayIso(), template_id: '' })
 
   if (q.isLoading) return <Spinner />
   if (q.error || !q.data) return <div className="page text-rot">Projekt nicht gefunden. <Link to="/projekte" className="underline">Zur Projektliste</Link></div>
   const p = q.data
-  const tasks = p.tasks.filter((t) => showDone || t.is_open)
-  const openCount = p.tasks.filter((t) => t.is_open).length
+  const currentRound = p.rounds[p.rounds.length - 1]
+  const activeRound = p.rounds.find((r) => r.id === roundSel) ?? currentRound
+  const isCurrent = !activeRound || !currentRound || activeRound.id === currentRound.id
+  const roundTasks = p.tasks.filter((t) => !activeRound || t.round_id === activeRound.id || (isCurrent && t.round_id === null))
+  const tasks = roundTasks.filter((t) => showDone || t.is_open)
+  const openCount = p.open_count
 
   const setStatus = (v: string) => update.mutate({ id: p.id, data: { status: v } }, { onSuccess: () => toast('Status geändert'), onError: (e) => toast(e.message, 'error') })
   const setPriority = (v: string) => update.mutate({ id: p.id, data: { priority: v } })
   const setAssignee = (v: string) => update.mutate({ id: p.id, data: v ? { assignee_id: Number(v) } : { clear: ['assignee_id'] } })
   const move = (t: Task, dir: -1 | 1) => {
-    const ids = p.tasks.map((x) => x.id)
+    const ids = roundTasks.map((x) => x.id)
     const i = ids.indexOf(t.id)
     const j = i + dir
     if (j < 0 || j >= ids.length) return
@@ -73,7 +81,7 @@ export default function ProjectDetail() {
             <h1 className="text-[26px] font-semibold tracking-tight">{p.project_number}</h1>
             <span className="inline-flex items-center gap-1.5 text-[12px] text-muted"><Dot className={signalBg(p.signal)} />{SIGNAL[p.signal]}</span>
           </div>
-          <p className="text-[16px] text-ink mt-0.5">{p.name}</p>
+          <p className="text-[16px] text-ink mt-0.5 flex items-center gap-2 flex-wrap">{p.name}<RoundChip n={p.round_number} title={p.round_title} /></p>
           {(p.reasons.length > 0 || p.warnings.length > 0) && (
             <p className="text-[12.5px] mt-1"><span className={p.signal === 'rot' ? 'text-rot' : p.signal === 'gelb' ? 'text-gelb' : 'text-muted'}>{p.reasons.join(' · ')}</span>{p.reasons.length > 0 && p.warnings.length > 0 && <span className="text-faint"> · </span>}<span className="text-muted">{p.warnings.join(' · ')}</span></p>
           )}
@@ -83,6 +91,7 @@ export default function ProjectDetail() {
           <button className="btn-outline" onClick={() => ui.editProject(p)}><Pencil size={14} />Bearbeiten</button>
           <button className="btn-outline" onClick={() => { setTplId(meta?.templates.find((t) => t.category === p.category)?.id.toString() ?? ''); setTplDeadline(p.deadline ?? ''); setTplDlg(true) }}><LayoutTemplate size={14} />Vorlage anwenden</button>
           {p.status !== 'abgeschlossen' && <button className="btn-outline" onClick={() => setDoneDlg(true)}><CheckCheck size={14} />Abschließen</button>}
+          {p.status === 'abgeschlossen' && <button className="btn-outline" onClick={() => { setFu({ title: '', status: 'anfrage', request_date: todayIso(), template_id: meta?.templates.find((t) => t.category === p.category)?.id.toString() ?? '' }); setFuDlg(true) }}><Repeat size={14} />Folgeauftrag starten</button>}
           <button className="btn-ghost text-rot" onClick={() => setConfirmDel(true)} title="Projekt löschen"><Trash2 size={14} /></button>
         </div>
       </div>
@@ -104,20 +113,33 @@ export default function ProjectDetail() {
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)] gap-4">
         <div className="space-y-4 min-w-0">
           <section className="card">
-            <header className="flex items-center justify-between px-4 pt-3 pb-2">
-              <h2 className="h2">Aufgaben <span className="text-[12px] font-normal text-faint">{openCount} offen</span></h2>
+            <header className="flex items-center justify-between px-4 pt-3 pb-2 gap-3 flex-wrap">
+              <h2 className="h2">Aufgaben <span className="text-[12px] font-normal text-faint">{isCurrent ? `${openCount} offen` : `Runde ${activeRound.number}`}</span></h2>
               <div className="flex items-center gap-2">
                 <label className="text-[12px] text-muted flex items-center gap-1.5"><input type="checkbox" checked={showDone} onChange={(e) => setShowDone(e.target.checked)} />erledigte zeigen</label>
-                <button className="btn-outline btn-sm" onClick={() => ui.newTask(p.id)}><Plus size={13} />Aufgabe</button>
+                {isCurrent && <button className="btn-outline btn-sm" onClick={() => ui.newTask(p.id)}><Plus size={13} />Aufgabe</button>}
               </div>
             </header>
+            {p.rounds.length > 1 && (
+              <div className="px-4 pb-2 flex items-center gap-1.5 flex-wrap" role="tablist" aria-label="Runden">
+                {p.rounds.map((r) => (
+                  <button key={r.id} role="tab" aria-selected={r.id === activeRound.id} className={cx('h-6 px-2.5 rounded-full border text-[12px] transition-colors', r.id === activeRound.id ? 'bg-ink text-canvas border-ink' : 'text-muted hover:text-ink hover:border-faint')}
+                    onClick={() => setRoundSel(r.id === currentRound.id ? null : r.id)} title={`${r.task_count} Aufgaben · ${PROJECT_STATUS[r.status]}${r.closed_at ? ` · abgeschlossen ${fmtDate(r.closed_at)}` : ''}`}>
+                    {r.number} {r.title}
+                  </button>
+                ))}
+              </div>
+            )}
+            {!isCurrent && (
+              <p className="mx-4 mb-2 px-3 py-1.5 rounded-md bg-raised text-[12px] text-muted">Runde {activeRound.number} „{activeRound.title}“, {PROJECT_STATUS[activeRound.status]}{activeRound.closed_at ? ` am ${fmtDate(activeRound.closed_at)}` : ''}. Nur zum Nachlesen, der laufende Durchgang ist Runde {currentRound.number}.</p>
+            )}
             {tasks.length === 0 ? (
-              <p className="px-4 pb-4 text-muted text-[13px]">Noch keine Aufgaben. Über „Vorlage anwenden" entstehen die Standardaufgaben mit Fristen.</p>
+              <p className="px-4 pb-4 text-muted text-[13px]">{isCurrent ? 'Noch keine Aufgaben. Über „Vorlage anwenden" entstehen die Standardaufgaben mit Fristen.' : 'In dieser Runde gab es keine Aufgaben.'}</p>
             ) : (
               <div className="px-1.5 pb-2">
                 {tasks.map((t, i) => (
-                  <div key={t.id} className="group flex items-center gap-3 pl-3 pr-2 py-2 rounded-md row-hover cursor-pointer" onClick={() => ui.openTask(t)}>
-                    <CheckCircle checked={t.status === 'erledigt'} onChange={() => t.status === 'erledigt' ? reopenTask.mutate(t.id) : completeTask.mutate(t.id, { onSuccess: () => toast(`„${t.title}“ erledigt`) })} />
+                  <div key={t.id} className={cx('group flex items-center gap-3 pl-3 pr-2 py-2 rounded-md row-hover cursor-pointer', !isCurrent && 'opacity-80')} onClick={() => ui.openTask(t)}>
+                    <CheckCircle checked={t.status === 'erledigt'} onChange={() => { if (!isCurrent) return; t.status === 'erledigt' ? reopenTask.mutate(t.id) : completeTask.mutate(t.id, { onSuccess: () => toast(`„${t.title}“ erledigt`) }) }} />
                     <span className="w-5 text-[11px] text-faint text-right">{i + 1}</span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2"><span className={cx('truncate', t.status === 'erledigt' ? 'text-faint line-through' : 'font-medium')}>{t.title}</span><PriorityMark p={t.priority} />{t.predecessor_open && ['ueberfaellig', 'heute', 'demnaechst', 'woche'].includes(t.due_state) && <span className="text-[11px] text-gelb whitespace-nowrap shrink-0" title="Die vorige Aufgabe ist noch offen">Vorgänger offen</span>}</div>
@@ -126,10 +148,10 @@ export default function ProjectDetail() {
                     <span className="w-9 h-6 rounded bg-raised border text-[11px] text-muted flex items-center justify-center shrink-0">{t.assignee_code ?? '–'}</span>
                     <div className="w-32 hidden sm:block"><ProgressBar value={t.progress} /></div>
                     <div className={cx('w-32 text-right text-[12px] shrink-0', dueColor(t.due_state))}>{t.due_date ? <>{fmtDate(t.due_date, { year: false })}<span className="text-faint"> KW {t.kw}</span></> : '–'}<div className="text-[11px]">{t.is_open ? dueLabel(t).replace(/^fällig .*? · /, '') : ''}</div></div>
-                    <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                    {isCurrent && <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                       <button className="text-faint hover:text-ink h-3.5" onClick={() => move(t, -1)} title="nach oben"><ArrowUp size={12} /></button>
                       <button className="text-faint hover:text-ink h-3.5" onClick={() => move(t, 1)} title="nach unten"><ArrowDown size={12} /></button>
-                    </div>
+                    </div>}
                   </div>
                 ))}
               </div>
@@ -187,7 +209,7 @@ export default function ProjectDetail() {
         </div>
       </div>
 
-      <Confirm open={confirmDel} onClose={() => setConfirmDel(false)} title="Projekt löschen?" text={`${p.project_number} mit ${p.task_count} Aufgaben und ${p.notes.length} Notizen wird endgültig gelöscht.`}
+      <Confirm open={confirmDel} onClose={() => setConfirmDel(false)} title="Projekt löschen?" text={`${p.project_number} mit ${p.tasks.length} Aufgaben und ${p.notes.length} Notizen wird endgültig gelöscht.`}
         onConfirm={() => del.mutate(p.id, { onSuccess: () => { toast('Projekt gelöscht'); nav('/projekte') } })} />
 
       <Dialog open={doneDlg} onClose={() => setDoneDlg(false)} title="Projekt abschließen" width="max-w-md" footer={
@@ -198,6 +220,24 @@ export default function ProjectDetail() {
         </>
       }>
         <p className="text-muted">{openCount > 0 ? `${openCount} Aufgaben sind noch offen. Was soll damit passieren?` : 'Das Projekt wird auf „Abgeschlossen" gesetzt, Fertigstellung heute.'}</p>
+      </Dialog>
+
+      <Dialog open={fuDlg} onClose={() => setFuDlg(false)} title="Folgeauftrag starten" width="max-w-md" footer={
+        <>
+          <button className="btn-outline" onClick={() => setFuDlg(false)}>Abbrechen</button>
+          <button className="btn-primary" disabled={!fu.title.trim() || followUp.isPending} onClick={() => followUp.mutate({ id: p.id, data: { title: fu.title.trim(), status: fu.status, request_date: fu.request_date || null, template_id: fu.template_id ? Number(fu.template_id) : null } },
+            { onSuccess: (r) => { setFuDlg(false); setRoundSel(null); toast(`Runde ${r.round_number} „${r.round_title}“ gestartet`) }, onError: (e) => toast(e.message, 'error') })}>Folgeauftrag starten</button>
+        </>
+      }>
+        <div className="space-y-3">
+          <p className="text-[13px] text-muted">Neuer Durchgang im selben Projekt mit derselben Nummer und demselben Ordner. Die bisherigen Aufgaben und Notizen bleiben erhalten und stören die Tagesansicht nicht mehr.</p>
+          <Field label="Titel"><input className="input" value={fu.title} onChange={(e) => setFu({ ...fu, title: e.target.value })} placeholder="z. B. Planänderung 2026" autoFocus /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Beginnt als"><Select value={fu.status} onChange={(v) => setFu({ ...fu, status: v })} options={[{ value: 'anfrage', label: PROJECT_STATUS.anfrage }, { value: 'angebot', label: PROJECT_STATUS.angebot }]} /></Field>
+            <Field label="Anfrage am"><DateInput value={fu.request_date} onChange={(v) => setFu({ ...fu, request_date: v })} /></Field>
+          </div>
+          <Field label="Aufgaben aus Vorlage" hint="Fristen folgen, sobald Auftragsdatum und Dauer eingetragen sind"><Select value={fu.template_id} onChange={(v) => setFu({ ...fu, template_id: v })} placeholder="keine" options={(meta?.templates ?? []).map((t) => ({ value: t.id, label: t.name }))} /></Field>
+        </div>
       </Dialog>
 
       <Dialog open={tplDlg} onClose={() => setTplDlg(false)} title="Vorlage anwenden" width="max-w-md" footer={

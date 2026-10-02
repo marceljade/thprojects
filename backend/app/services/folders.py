@@ -26,6 +26,14 @@ def phase_for_status(status: ProjectStatus | str) -> str:
     return PHASE_ANFRAGE if ProjectStatus(status) in (ProjectStatus.anfrage, ProjectStatus.angebot) else PHASE_AUFTRAG
 
 
+def phase_for_project(pr: models.Project) -> str:
+    """Ab der zweiten Runde (Folgeauftrag) heißt der Ordner immer Auftrag, egal wie die Runde steht."""
+    rounds = getattr(pr, "rounds", None) or []
+    if rounds and max(r.number for r in rounds) >= 2:
+        return PHASE_AUFTRAG
+    return phase_for_status(pr.status)
+
+
 def sanitize(name: str) -> str:
     name = _ILLEGAL.sub(" ", name).strip().rstrip(".")
     return re.sub(r"\s+", " ", name)
@@ -36,7 +44,7 @@ def year_dir(project_number: str) -> str | None:
 
 
 def expected_folder_name(pr: models.Project) -> str:
-    return sanitize(f"{pr.project_number} {phase_for_status(pr.status)} {pr.name}")
+    return sanitize(f"{pr.project_number} {phase_for_project(pr)} {pr.name}")
 
 
 def base_path(db: Session) -> str:
@@ -115,7 +123,7 @@ def folder_hint(db: Session, pr: models.Project) -> str | None:
     if Path(cur).name == expected:
         return None
     old_phase = phase_of_folder(cur)
-    new_phase = phase_for_status(pr.status)
+    new_phase = phase_for_project(pr)
     if old_phase and old_phase != new_phase:
         return f"Ordner heißt noch {old_phase}. Benenne ihn auf dem NAS in {new_phase} um."
     return f"Ordnername weicht ab. Erwartet: {expected}."

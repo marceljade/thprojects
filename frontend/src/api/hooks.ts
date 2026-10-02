@@ -64,6 +64,7 @@ export const useCreateProject = () => useMut((data: Record<string, unknown>) => 
 export const useUpdateProject = () => useMut(({ id, data }: { id: number; data: Record<string, unknown> }) => api.put<ProjectDetail>(`/api/projects/${id}`, data))
 export const useDeleteProject = () => useMut((id: number) => api.del(`/api/projects/${id}`))
 export const useCompleteProject = () => useMut(({ id, open_tasks }: { id: number; open_tasks: string }) => api.post<ProjectDetail>(`/api/projects/${id}/complete`, { open_tasks }))
+export const useFollowUp = () => useMut(({ id, data }: { id: number; data: Record<string, unknown> }) => api.post<ProjectDetail>(`/api/projects/${id}/follow-up`, data))
 export const useApplyTemplate = () => useMut(({ id, data }: { id: number; data: Record<string, unknown> }) => api.post<ProjectDetail>(`/api/projects/${id}/apply-template`, data))
 export const useFolderLookup = (project_number: string, status: string, name: string) =>
   useQuery({ queryKey: ['folder-lookup', project_number, status, name], enabled: /^\d{2}-\d{3}$/.test(project_number.trim()),
