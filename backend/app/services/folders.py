@@ -92,6 +92,35 @@ def parse_folder_path(path: str) -> dict | None:
     return {"project_number": nr, "name": title, "status": status.value}
 
 
+def base_reachable_dir(db: Session, path: str) -> bool:
+    """Liegt der Pfad unter dem Basispfad und ist der Jahresordner erreichbar? Dann darf neu gesucht werden."""
+    base = base_path(db)
+    if not base or not path.lower().startswith(base.lower()):
+        return False
+    try:
+        return Path(path).parent.is_dir()
+    except OSError:
+        return False
+
+
+def folder_hint(db: Session, pr: models.Project) -> str | None:
+    """Hinweis für die Projektseite, wenn der Ordner fehlt oder vom erwarteten Namen abweicht.
+    Nur Text, die App ändert auf dem NAS nichts."""
+    cur = current_path(pr)
+    expected = expected_folder_name(pr)
+    if not cur:
+        if not base_path(db) or not year_dir(pr.project_number):
+            return None
+        return f"Kein Ordner mit {pr.project_number} im Jahresordner gefunden. Lege ihn auf dem NAS an, die App übernimmt ihn dann."
+    if Path(cur).name == expected:
+        return None
+    old_phase = phase_of_folder(cur)
+    new_phase = phase_for_status(pr.status)
+    if old_phase and old_phase != new_phase:
+        return f"Ordner heißt noch {old_phase}. Benenne ihn auf dem NAS in {new_phase} um."
+    return f"Ordnername weicht ab. Erwartet: {expected}."
+
+
 def find_folder(db: Session, project_number: str) -> str | None:
     """Sucht <Basispfad>\\20JJ\\<Projektnr>* und liefert den ersten Treffer."""
     base = base_path(db)

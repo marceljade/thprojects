@@ -46,12 +46,14 @@ In jedes Datumsfeld kannst du ein Datum aus der Zwischenablage einfügen (`Strg+
 
 ## Projektordner
 
-Ordner heißen `<Basispfad>\20JJ\<Projektnr> <Anfrage|Auftrag> <Projektname>`, zum Beispiel `…\2024\24-019 Auftrag Schall Schatten WP Neuscharrel, LK Cloppenburg`.
+Die App verändert auf dem NAS nichts. Sie legt keine Ordner an, benennt keine um, verschiebt und löscht nichts. Sie liest nur: den Ordner zur Projektnummer finden und öffnen. Ordner legst du selbst an und benennst sie selbst um.
 
-- **Pfad einfügen**: gibt es den Ordner schon, kannst du im Formular „Neues Projekt" als Erstes den Pfad ins Feld Projektordner einfügen. Projektnummer, Projektname und Status (Anfrage oder Beauftragt) werden daraus übernommen, aber nur in Felder, die noch leer sind. Die Rückmeldung sagt, was übernommen wurde.
-- **Suchen**: bleibt das Feld leer, sucht die App beim Anlegen im Jahresordner des Basispfads nach einem Ordner, der mit der Projektnummer beginnt, und übernimmt ihn. Die Rückmeldung sagt, welcher Ordner übernommen wurde.
-- **Öffnen**: „Projektordner öffnen" auf der Projektseite öffnet den hinterlegten Ordner im Explorer. Ist keiner hinterlegt, wird einmal im Basispfad gesucht.
-- Die App legt nie Ordner an und benennt nie welche um, auch nicht beim Wechsel von Anfrage zu Auftrag. Der Ablageort ist das NAS, dort ändert nur der Nutzer selbst etwas. Passt der hinterlegte Pfad nicht mehr, trägst du ihn über „Bearbeiten" neu ein.
+Erwarteter Name: `<Basispfad>\20JJ\<Projektnr> <Anfrage|Auftrag> <Projektname>`, zum Beispiel `…\2024\24-019 Auftrag Schall Schatten WP Neuscharrel, LK Cloppenburg`. „Anfrage" bei Status Anfrage und Angebot erstellt, „Auftrag" ab Beauftragt.
+
+- **Pfad einfügen**: gibt es den Ordner schon, kannst du im Formular „Neues Projekt" als Erstes den Pfad ins Feld Projektordner einfügen. Projektnummer, Projektname und Status (Anfrage oder Beauftragt) werden daraus übernommen, aber nur in Felder, die noch leer sind.
+- **Finden**: bleibt das Feld leer, sucht die App im Jahresordner des Basispfads nach einem Ordner, der mit der Projektnummer beginnt, und übernimmt ihn. Das Formular zeigt vorab „Erwarteter Ordner: …" mit gefunden oder nicht gefunden. Findet sie beim Anlegen nichts, probiert sie es bei jedem Öffnen der Projektseite erneut, bis du den Ordner angelegt hast. Jede Übernahme steht im Protokoll.
+- **Öffnen**: „Projektordner öffnen" auf der Projektseite öffnet den hinterlegten Ordner im Explorer.
+- **Abweichung**: passt der Ordnername nicht zum erwarteten Namen, zeigt die Projektseite einen Hinweis („Kein Ordner gefunden", „Ordner heißt noch Anfrage", „Ordnername weicht ab") mit dem Knopf „Erwarteten Namen kopieren". Umbenennen tust du auf dem NAS. Beim nächsten Öffnen der Projektseite findet die App den Ordner unter dem neuen Namen wieder, solange er mit der Projektnummer beginnt.
 
 ## Update auf eine neue Version – Daten behalten
 

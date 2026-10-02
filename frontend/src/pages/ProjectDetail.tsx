@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowDown, ArrowUp, CheckCheck, FolderOpen, LayoutTemplate, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, CheckCheck, Copy, FolderOpen, LayoutTemplate, Pencil, Plus, Trash2 } from 'lucide-react'
 import type { Task } from '@/api/types'
 import { useApplyTemplate, useCompleteProject, useCreateNote, useDeleteNote, useDeleteProject, useMeta, useOpenFolder, useProject, useReorderTasks, useSchedule, useUpdateProject } from '@/api/hooks'
 import { useUi } from '@/components/layout/Shell'
@@ -176,6 +176,13 @@ export default function ProjectDetail() {
           {p.remarks && <section className="card px-4 py-3 text-[13px]"><span className="label">Bemerkung</span>{p.remarks}</section>}
           <section className="card px-4 py-3 text-[12px] text-muted break-all"><span className="label">Projektordner</span>
             {p.folder_path || <span className="text-faint">keiner hinterlegt</span>}
+            {p.folder_note && (!p.folder_path || !p.folder_matches) && (
+              <div className="mt-2 flex items-start gap-2 break-normal">
+                <span className="text-ink">{p.folder_note}</span>
+                <button className="btn-ghost shrink-0 text-[12px]" title="Erwarteten Ordnernamen in die Zwischenablage kopieren"
+                  onClick={() => { navigator.clipboard?.writeText(p.expected_folder_name); toast(`Kopiert: ${p.expected_folder_name}`) }}><Copy size={12} />Erwarteten Namen kopieren</button>
+              </div>
+            )}
           </section>
         </div>
       </div>

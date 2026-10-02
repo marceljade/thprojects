@@ -49,12 +49,21 @@ def list_projects(db: Session, status: str | None = None, active: bool | None = 
 
 def get_project(db: Session, project_id: int, folder_note: str | None = None) -> ProjectDetail:
     pr = _get(db, project_id)
+    cur = folders.current_path(pr)
+    if not cur or (not Path(cur).is_dir() and folders.base_reachable_dir(db, cur)):
+        # Kein Pfad gemerkt oder der gemerkte Ordner wurde auf dem NAS umbenannt: nur lesend neu suchen
+        found = folders.find_folder(db, pr.project_number)
+        if found and found != cur:
+            pr.folder_path = found
+            common.log(db, "Projektordner übernommen", project_id=pr.id, field="ordner", new=Path(found).name)
+            db.commit()
+            folder_note = folder_note or f"Vorhandener Ordner übernommen: {Path(found).name}"
     p = common.params(db)
     base = common.project_out(pr, p)
     tasks = sorted(pr.tasks, key=lambda t: (t.sort_order, t.id))
     notes = db.scalars(select(models.Note).where(models.Note.project_id == pr.id).order_by(models.Note.created_at.desc(), models.Note.id.desc())).all()
     return ProjectDetail(**base.model_dump(), tasks=[common.task_out(t, p) for t in tasks], notes=[common.note_out(n) for n in notes],
-                         folder_note=folder_note)
+                         folder_note=folder_note or folders.folder_hint(db, pr))
 
 
 def _check_number(db: Session, number: str, exclude_id: int | None = None) -> None:
@@ -85,6 +94,7 @@ def create_project(db: Session, data: ProjectCreate) -> ProjectDetail:
     note = None
     if folder and folder != (data.folder_path or "").strip():
         note = f"Vorhandener Ordner übernommen: {Path(folder).name}"
+        common.log(db, "Projektordner übernommen", project_id=pr.id, field="ordner", new=Path(folder).name)
     if data.template_id:
         apply_template(db, pr, data.template_id, None, data.compute_due_dates)
     db.commit()
@@ -190,8 +200,13 @@ def apply_template_endpoint(db: Session, project_id: int, template_id: int, dead
 
 
 # ------------------------------------------------------------ Projektordner --
-def find_folder(db: Session, project_number: str) -> str | None:
-    return folders.find_folder(db, project_number)
+def folder_lookup(db: Session, project_number: str, status: str, name: str) -> dict:
+    """Vorschau fürs Projektformular: erwarteter Ordner und ob er schon da ist. Nur lesend."""
+    nr = project_number.strip()
+    pr = models.Project(project_number=nr, status=status or "anfrage", name=name or "")
+    expected = folders.expected_folder_path(db, pr) if nr else None
+    found = folders.find_folder(db, nr) if nr else None
+    return {"expected": expected, "found": found}
 
 
 def can_open_folders() -> bool:

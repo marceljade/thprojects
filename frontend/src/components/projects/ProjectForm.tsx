@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Project } from '@/api/types'
-import { useCreateProject, useMeta, useTemplatePreview, useUpdateProject } from '@/api/hooks'
+import { useCreateProject, useFolderLookup, useMeta, useTemplatePreview, useUpdateProject } from '@/api/hooks'
 import { DateInput, Dialog, Field, Select, useToast } from '@/components/ui'
 import { CATEGORY, fmtDate, PRIORITY, PROJECT_STATUS, addDays, parseDate, toIso } from '@/lib/format'
 
@@ -81,6 +81,7 @@ export function ProjectForm({ open, onClose, project }: { open: boolean; onClose
     if (od && f.offered_weeks) return toIso(addDays(od, Math.round(Number(f.offered_weeks) * 7)))
     return null
   }, [f.target_deadline, f.order_date, f.offered_weeks])
+  const lookup = useFolderLookup(f.project_number, f.status, f.name).data
   const preview = useTemplatePreview(f.template_id ? Number(f.template_id) : null, f.compute_due_dates ? deadline : null)
 
   const submit = () => {
@@ -134,7 +135,8 @@ export function ProjectForm({ open, onClose, project }: { open: boolean; onClose
             </Field>
           </div>
           <Field label="Projektordner" hint={f.folder_path ? 'eigener Pfad' : (expectedFolder(meta?.settings.base_path ?? '', f.project_number, f.status, f.name)
-            ? <>wird gesucht als <span className="text-ink break-all">{expectedFolder(meta?.settings.base_path ?? '', f.project_number, f.status, f.name)}</span></>
+            ? <>Erwarteter Ordner: <span className="text-ink break-all">{expectedFolder(meta?.settings.base_path ?? '', f.project_number, f.status, f.name)}</span>
+                {lookup && <> · {lookup.found ? <span className="text-ink">gefunden{lookup.found.split(/[\\/]/).pop() !== expectedFolder(meta?.settings.base_path ?? '', f.project_number, f.status, f.name)?.split(/[\\/]/).pop() ? ` als ${lookup.found.split(/[\\/]/).pop()}` : ''}</span> : 'nicht gefunden, die App legt keinen an'}</>}</>
             : 'Basispfad in den Einstellungen setzen, dann wird ein vorhandener Ordner gefunden')}>
             <input className="input" value={f.folder_path} onChange={(e) => set('folder_path', e.target.value)} placeholder={editing ? 'leer = im Basispfad suchen' : 'leer = im Basispfad suchen, oder Pfad einfügen'} />
           </Field>
