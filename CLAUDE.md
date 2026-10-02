@@ -48,7 +48,7 @@ README.md          Nutzerdoku, Logik, Update-Anleitung
 9. Design: ruhig, viel Weißraum, eine Akzentfarbe (Petrol), Semantikfarben nur für Fälligkeit und Ampel. Keine Excel-Optik, keine bunten Karten, keine Animationen ohne Anlass. Tokens in `index.css`, Komponentenklassen `.card .btn-* .input .chip`.
 10. Keine neuen Abhängigkeiten ohne Grund. Keine Cloud, keine Anmeldung.
 11. Die App verändert auf dem NAS nichts (kein Anlegen, Umbenennen, Verschieben, Löschen, keine Dateien schreiben). Erlaubt ist nur Lesen: vorhandenen Ordner per Projektnummer finden und öffnen. Ordner legt der Nutzer selbst an und benennt sie selbst um.
-12. Outlook nur einweg und nur im eigenen Ordner: Die App schreibt, ändert und löscht ausschließlich im Kalenderordner „Projektfristen" unter dem Standardkalender und dort nur Termine mit der UserProperty `pmth_id`. Hauptkalender, andere Ordner und fremde Termine im Ordner werden nie angefasst. Die App liest keine Outlook-Termine zurück.
+12. Outlook nur einweg und nur im eigenen Ordner: Die App schreibt, ändert und löscht ausschließlich im Kalenderordner „Projektfristen" unter dem Standardkalender und dort nur Termine mit der UserProperty `pmthid` (Outlook erlaubt in Feldnamen kein `_`, `[`, `]`, `#`). Hauptkalender, andere Ordner und fremde Termine im Ordner werden nie angefasst. Die App liest keine Outlook-Termine zurück.
 
 ## Fachliche Entscheidungen (nicht neu diskutieren)
 

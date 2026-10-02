@@ -6,7 +6,7 @@ Drei Schichten, damit nichts davon Outlook braucht, außer dem Adapter ganz unte
   OutlookCalendar    der echte Adapter über pywin32, win32com wird erst in den Methoden importiert
 
 Invariante 12: Die App schreibt, ändert und löscht ausschließlich im Ordner "Projektfristen" unter dem
-Standardkalender und dort nur Termine mit der eigenen Kennung pmth_id. Alles andere wird nie angefasst.
+Standardkalender und dort nur Termine mit der eigenen Kennung pmthid. Alles andere wird nie angefasst.
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ from ..schemas import OutlookSyncOut, ProjectOut, TaskOut
 from . import common
 
 FOLDER_NAME = "Projektfristen"
-PROP = "pmth_id"
+PROP = "pmthid"     # Outlook erlaubt in Feldnamen kein _ [ ] #
 RED_CATEGORY = "Rote Kategorie"   # Fallback, sonst die Kategorie mit Farbe Rot aus dem Postfach
 AUTO_DELAY_SECONDS = 5
 
