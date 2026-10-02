@@ -34,14 +34,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 export function Dialog({ open, onClose, title, children, width = 'max-w-xl', footer }:
   { open: boolean; onClose: () => void; title: string; children: ReactNode; width?: string; footer?: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null)
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+  // Fokus nur einmal beim Öffnen setzen, und zwar auf das erste Feld im Inhalt, nicht auf das X im Kopf.
+  // onClose kommt oft als Inline-Funktion, darf also nicht als Abhängigkeit dienen, sonst springt der Fokus bei jedem Tastendruck.
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeRef.current() }
     window.addEventListener('keydown', onKey)
-    const first = ref.current?.querySelector<HTMLElement>('input, select, textarea, button')
+    const body = ref.current?.querySelector<HTMLElement>('[data-dialog-body]')
+    const first = body?.querySelector<HTMLElement>('input:not([type=checkbox]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])')
     first?.focus()
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+  }, [open])
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/30 dark:bg-black/50 p-4 sm:p-8" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
@@ -50,7 +55,7 @@ export function Dialog({ open, onClose, title, children, width = 'max-w-xl', foo
           <h2 className="h2">{title}</h2>
           <button className="btn-icon h-8 w-8" onClick={onClose} aria-label="Schließen"><X size={16} /></button>
         </div>
-        <div className="px-5 py-4">{children}</div>
+        <div className="px-5 py-4" data-dialog-body>{children}</div>
         {footer && <div className="px-5 py-3 border-t flex items-center justify-end gap-2 bg-raised/60 rounded-b-lg">{footer}</div>}
       </div>
     </div>

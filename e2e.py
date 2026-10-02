@@ -150,7 +150,10 @@ with sync_playwright() as pw:
     page.get_by_role("button", name="Folgeauftrag starten").click()
     dlg = page.get_by_role("dialog")
     expect(dlg).to_be_visible()
-    dlg.get_by_placeholder("z. B. Planänderung 2026").fill("Planänderung 2026")
+    # echtes Tippen: der Fokus muss im Titelfeld bleiben (früher sprang er aufs X und "p" öffnete den Projektdialog)
+    page.keyboard.type("Planänderung 2026", delay=20)
+    assert dlg.get_by_placeholder("z. B. Planänderung 2026").input_value() == "Planänderung 2026"
+    assert page.get_by_role("dialog").count() == 1
     dlg.get_by_role("button", name="Folgeauftrag starten").click()
     expect(page.get_by_text("Folgeauftrag 2")).to_be_visible()
     expect(page.get_by_role("tab", name="2 Planänderung 2026")).to_be_visible()
