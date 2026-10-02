@@ -14,3 +14,6 @@ __pycache__/
 .pytest_cache/
 
 # backend/static bleibt im Repo (gebautes Frontend, wird vom Backend ausgeliefert)
+
+# Einmal-Import mit Kundendaten, nie ins Repo
+import/
