@@ -24,7 +24,7 @@ from . import common
 
 FOLDER_NAME = "Projektfristen"
 PROP = "pmthid"     # Outlook erlaubt in Feldnamen kein _ [ ] #
-RED_CATEGORY = "Rote Kategorie"   # Fallback, sonst die Kategorie mit Farbe Rot aus dem Postfach
+CATEGORY = "Projektfristen"       # eigene Kategorie in Rot, wird einmalig in der Kategorienliste des Postfachs angelegt
 AUTO_DELAY_SECONDS = 5
 
 SYNC_MODES = ("aus", "manuell", "automatisch")
@@ -128,7 +128,7 @@ class OutlookCalendar:
 
     def __init__(self) -> None:
         self._folder = None
-        self._red = RED_CATEGORY
+        self._red = CATEGORY
 
     def open(self) -> "OutlookCalendar":
         try:
@@ -156,11 +156,9 @@ class OutlookCalendar:
                 folder = root.Folders.Add(FOLDER_NAME, 9)
             self._folder = folder
             try:
-                for i in range(ns.Categories.Count):
-                    c = ns.Categories.Item(i + 1)
-                    if c.Color == 1:   # olCategoryColorRed
-                        self._red = c.Name
-                        break
+                # Eigene rote Kategorie, damit keine vorhandene Kategorie des Nutzers mitbenutzt wird
+                if not any(ns.Categories.Item(i + 1).Name == CATEGORY for i in range(ns.Categories.Count)):
+                    ns.Categories.Add(CATEGORY, 1)   # olCategoryColorRed
             except pywintypes.com_error:
                 pass
         except pywintypes.com_error as e:
@@ -183,7 +181,7 @@ class OutlookCalendar:
                 prop = None
             if prop is None or not prop.Value:
                 continue
-            start = it.Start
+            start = it.Start.astimezone()   # pywin32 liefert UTC, der Fristtag gilt in lokaler Zeit
             out.append(Entry(key=str(prop.Value), subject=str(it.Subject or ""), day=date(start.year, start.month, start.day),
                              high=self._red in str(it.Categories or "").split(", "), handle=it))
         return out
