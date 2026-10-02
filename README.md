@@ -54,6 +54,17 @@ Ein Projekt ist abgeschlossen, später kommt zum Beispiel eine Planänderung. Da
 - **Notizen** bleiben projektweit sichtbar, die Historie zeigt den Rundenwechsel. Der Export hat eine Spalte „Runde".
 - Auf dem NAS ändert sich nichts. Als erwarteter Ordnername gilt ab Runde 2 immer die Phase Auftrag, auch wenn die neue Runde noch Anfrage ist.
 
+## Outlook
+
+Die App kann ihre Fristen in einen eigenen Outlook-Kalender schreiben. Einweg: App nach Outlook, die App liest keine Outlook-Termine.
+
+- **Voraussetzung**: das klassische Outlook (Microsoft 365, klassische Ansicht) auf diesem Rechner, mit dem Postfach eingerichtet. Die Termine liegen im Postfach und erscheinen damit auch im neuen Outlook, in Outlook im Web und auf dem Handy, geschrieben werden sie aber nur über das klassische Outlook.
+- **Ordner**: beim ersten Abgleich legt die App unter deinem Kalender den Ordner „Projektfristen" an. Nur dort schreibt, ändert und löscht sie, und auch dort nur ihre eigenen Termine. Der Hauptkalender und alle anderen Ordner werden nie angefasst. Eigene Termine, die du selbst in „Projektfristen" anlegst, bleiben unberührt.
+- **Was drin steht**: jede offene Aufgabe mit Frist als ganztägiger Termin am Fristtag, Betreff „Projektnr. Projektname: Aufgabe". Jede Projektfrist eines aktiven Projekts als „Projektnr. Projektname: Projektfrist". Priorität hoch oder kritisch bekommt die rote Kategorie. Alles ohne Erinnerung und als „Frei", damit der Kalender nichts blockiert.
+- **Abgleich**: in den Einstellungen unter Outlook. „Aus" (Standard) schreibt nichts. „Manuell" zeigt den Knopf „Mit Outlook abgleichen" auf der Kalenderseite und in den Einstellungen. „Automatisch" gleicht beim Start und ein paar Sekunden nach jeder Änderung an Fristen oder Status im Hintergrund ab. Der Abgleich ist vollständig: fehlende Termine werden angelegt, geänderte aktualisiert, Termine zu erledigten, entfallenen oder gelöschten Aufgaben entfernt. Die Rückmeldung sagt „x angelegt, y geändert, z entfernt", der Zeitpunkt des letzten Abgleichs steht in den Einstellungen.
+- **Leeren**: „Outlook-Kalender leeren" entfernt alle von der App angelegten Termine aus „Projektfristen", mit Rückfrage. Beim nächsten Abgleich kommen sie wieder.
+- **Wenn es hakt**: die Meldung sagt, was fehlt. Outlook nicht installiert, Outlook nicht erreichbar (einmal starten und das Postfach öffnen), oder Outlook hat den Zugriff abgelehnt (Sicherheitsabfrage in Outlook mit „Zulassen" bestätigen). Ein Fehler im Abgleich bricht nie eine Änderung in der App ab, er steht nur im Protokoll und in den Einstellungen.
+
 ## Projektordner
 
 Die App verändert auf dem NAS nichts. Sie legt keine Ordner an, benennt keine um, verschiebt und löscht nichts. Sie liest nur: den Ordner zur Projektnummer finden und öffnen. Ordner legst du selbst an und benennst sie selbst um.

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
 import type { CalendarDay, Task } from '@/api/types'
-import { useCalendar, useMeta } from '@/api/hooks'
+import { useCalendar, useMeta, useOutlookSync } from '@/api/hooks'
 import { useUi } from '@/components/layout/Shell'
 import { TaskRow } from '@/components/tasks/TaskRow'
-import { Segmented, Select, Spinner } from '@/components/ui'
+import { Segmented, Select, Spinner, useToast } from '@/components/ui'
 import { addDays, cx, fmtDate, fmtLong, isoWeek, monthName, toIso, todayIso, weekStart, weekdayShort, parseDate } from '@/lib/format'
 
 type View = 'tag' | 'woche' | 'monat'
@@ -51,6 +51,8 @@ export default function Calendar() {
   const [who, setWho] = useState('mine')
   const [withDone, setWithDone] = useState(false)
   const meta = useMeta().data
+  const outlook = useOutlookSync()
+  const toast = useToast()
   const ui = useUi()
 
   let start: Date, end: Date, title: string
@@ -87,6 +89,10 @@ export default function Calendar() {
           <Select className="w-auto h-8 text-[12.5px]" value={who} onChange={setWho}
             options={[{ value: 'mine', label: `Meine (${meta?.settings.my_user_code ?? '–'})` }, { value: 'alle', label: 'Alle Bearbeiter' }, ...(meta?.users ?? []).filter((u) => u.active && u.id !== meta?.settings.my_user_id).map((u) => ({ value: String(u.id), label: u.code }))]} />
           <label className="text-[12px] text-muted flex items-center gap-1.5"><input type="checkbox" checked={withDone} onChange={(e) => setWithDone(e.target.checked)} />erledigte</label>
+          {meta?.settings.outlook_sync === 'manuell' && (
+            <button className="btn-outline btn-sm" disabled={outlook.isPending} title="Fristen in den Outlook-Ordner „Projektfristen“ schreiben"
+              onClick={() => outlook.mutate(undefined, { onSuccess: (r) => toast(r.message), onError: (e) => toast(e.message, 'error') })}><RefreshCw size={13} />Mit Outlook abgleichen</button>
+          )}
         </div>
       </div>
 

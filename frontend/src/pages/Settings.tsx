@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Download, Plus, Trash2 } from 'lucide-react'
+import { Download, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import type { Template, TemplateTask } from '@/api/types'
-import { useAddHoliday, useBackups, useCreateBackup, useDeleteHoliday, useDeleteTaskType, useDeleteTemplate, useDeleteUser, useHolidays, useMeta, useSaveSettings, useSaveTaskType, useSaveTemplate, useSaveUser } from '@/api/hooks'
+import { useAddHoliday, useBackups, useCreateBackup, useDeleteHoliday, useDeleteTaskType, useDeleteTemplate, useDeleteUser, useHolidays, useMeta, useOutlookClear, useOutlookSync, useSaveSettings, useSaveTaskType, useSaveTemplate, useSaveUser } from '@/api/hooks'
 import { PageHeader } from '@/components/layout/Shell'
 import { Confirm, Dialog, Field, Select, useToast } from '@/components/ui'
 import { CATEGORY, cx, fmtDate, fmtDateTime } from '@/lib/format'
@@ -57,6 +57,7 @@ export default function Settings() {
         <TaskTypes />
         <Holidays />
         <Backup autoBackup={s.auto_backup} onToggle={(v) => { setS({ ...s, auto_backup: v }); persist({ auto_backup: v }) }} />
+        <Outlook />
       </div>
     </div>
   )
@@ -202,6 +203,36 @@ function Holidays() {
         <input className="input" placeholder="Bezeichnung" value={n.name} onChange={(e) => setN({ ...n, name: e.target.value })} />
         <button className="btn-outline" disabled={!n.date} onClick={() => add.mutate(n, { onSuccess: () => setN({ date: '', name: '' }), onError: (e) => toast(e.message, 'error') })}><Plus size={14} /></button>
       </div>
+    </Card>
+  )
+}
+
+function Outlook() {
+  const meta = useMeta().data
+  const save = useSaveSettings()
+  const sync = useOutlookSync()
+  const clear = useOutlookClear()
+  const toast = useToast()
+  const [confirm, setConfirm] = useState(false)
+  const s = meta?.settings
+  if (!s) return null
+  const mode = s.outlook_sync
+  return (
+    <Card title="Outlook" sub="Fristen als ganztägige Termine im eigenen Kalenderordner „Projektfristen“. Einweg, die App liest keine Outlook-Termine.">
+      <Field label="Abgleich" hint={mode === 'automatisch' ? 'beim Start und wenige Sekunden nach jeder Änderung an Fristen oder Status' : mode === 'manuell' ? 'nur über den Knopf hier oder auf der Kalenderseite' : 'nichts wird nach Outlook geschrieben'}>
+        <Select value={mode} onChange={(v) => save.mutate({ outlook_sync: v }, { onError: (e) => toast(e.message, 'error') })}
+          options={[{ value: 'aus', label: 'Aus' }, { value: 'manuell', label: 'Manuell' }, { value: 'automatisch', label: 'Automatisch' }]} />
+      </Field>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button className="btn-primary" disabled={mode === 'aus' || sync.isPending} onClick={() => sync.mutate(undefined, { onSuccess: (r) => toast(r.message), onError: (e) => toast(e.message, 'error') })}><RefreshCw size={14} />Mit Outlook abgleichen</button>
+        <button className="btn-outline" disabled={clear.isPending} onClick={() => setConfirm(true)}>Outlook-Kalender leeren</button>
+      </div>
+      <p className="text-[12px] text-faint mt-2">
+        {s.outlook_last_sync ? <>Letzter Abgleich {fmtDateTime(s.outlook_last_sync)}{s.outlook_last_result ? ` · ${s.outlook_last_result}` : ''}</> : 'Noch kein Abgleich.'}
+      </p>
+      <p className="text-[12px] text-faint mt-1">Braucht das klassische Outlook auf diesem Rechner. Der Hauptkalender und andere Ordner werden nie angefasst. Offene Aufgaben mit Frist und Projektfristen aktiver Projekte, Priorität hoch mit roter Kategorie, als „Frei“ ohne Erinnerung.</p>
+      <Confirm open={confirm} onClose={() => setConfirm(false)} title="Outlook-Kalender leeren?" text="Alle von der App angelegten Termine im Ordner „Projektfristen“ werden entfernt. Andere Termine bleiben. Beim nächsten Abgleich werden sie wieder angelegt." confirmLabel="Leeren"
+        onConfirm={() => { setConfirm(false); clear.mutate(undefined, { onSuccess: (r) => toast(r.message), onError: (e) => toast(e.message, 'error') }) }} />
     </Card>
   )
 }

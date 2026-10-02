@@ -22,6 +22,9 @@ if not exist ".venv\Scripts\python.exe" (
   ".venv\Scripts\python.exe" -m pip install --quiet -r requirements.txt || (echo Paketinstallation fehlgeschlagen. & pause & exit /b 1)
 )
 
+rem ---- Nach einem Update: fehlende Pakete nachinstallieren (z. B. pywin32 fuer die Outlook-Anbindung)
+".venv\Scripts\python.exe" -c "import win32com" >nul 2>&1 || ".venv\Scripts\python.exe" -m pip install --quiet -r requirements.txt
+
 rem ---- Server starten (eigenes, minimiertes Fenster) und Browser oeffnen
 start "Projektmanagement T&H - Server (Fenster schliessen beendet die Anwendung)" /min ".venv\Scripts\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8765
 timeout /t 3 /nobreak >nul

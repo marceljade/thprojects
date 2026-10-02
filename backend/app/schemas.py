@@ -377,6 +377,9 @@ class SettingsOut(BaseModel):
     warn_project_workdays: int
     auto_backup: bool
     dashboard_widgets: dict[str, bool]
+    outlook_sync: str                    # aus | manuell | automatisch
+    outlook_last_sync: datetime | None
+    outlook_last_result: str
 
 
 class SettingsIn(BaseModel):
@@ -386,6 +389,23 @@ class SettingsIn(BaseModel):
     warn_project_workdays: int | None = Field(default=None, ge=0, le=60)
     auto_backup: bool | None = None
     dashboard_widgets: dict[str, bool] | None = None
+    outlook_sync: str | None = None
+
+    @field_validator("outlook_sync")
+    @classmethod
+    def _outlook(cls, v: str | None) -> str | None:
+        if v is not None and v not in ("aus", "manuell", "automatisch"):
+            raise ValueError("outlook_sync muss aus, manuell oder automatisch sein.")
+        return v
+
+
+class OutlookSyncOut(BaseModel):
+    created: int
+    updated: int
+    removed: int
+    total: int
+    at: datetime
+    message: str
 
 
 # --------------------------------------------------------------- Dashboard --

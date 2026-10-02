@@ -177,6 +177,11 @@ def update_settings(db: Session, data: SettingsIn) -> SettingsOut:
         common.set_setting(db, "auto_backup", "1" if data.auto_backup else "0")
     if data.dashboard_widgets is not None:
         common.set_setting(db, "dashboard_widgets", json.dumps(data.dashboard_widgets))
+    if data.outlook_sync is not None:
+        old = common.get_setting(db, "outlook_sync", "aus")
+        if old != data.outlook_sync:
+            common.set_setting(db, "outlook_sync", data.outlook_sync)
+            common.log(db, "Einstellung geändert", field="outlook_sync", old=old, new=data.outlook_sync)
     db.commit()
     return common.settings_out(db)
 

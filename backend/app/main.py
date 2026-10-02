@@ -11,6 +11,7 @@ from . import config, database
 from .routers.api import router
 from .migrate import migrate
 from .seed import seed
+from .services import outlook
 from .services.admin import daily_backup_if_due
 
 
@@ -24,9 +25,11 @@ def create_app(database_url: str | None = None, serve_static: bool = True) -> Fa
         added = migrate(database.engine)
         if added:
             print("Datenbank ergänzt um:", ", ".join(added))
+        outlook.register(database.SessionLocal)
         with database.SessionLocal() as db:
             seed(db)
             daily_backup_if_due(db)
+            outlook.start_auto_on_boot(db)
         yield
 
     app = FastAPI(title=config.APP_NAME, version=config.VERSION, lifespan=lifespan)

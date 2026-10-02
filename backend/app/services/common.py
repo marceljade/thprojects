@@ -44,6 +44,9 @@ def settings_out(db: Session) -> SettingsOut:
         warn_project_workdays=int(get_setting(db, "warn_project_workdays", "5") or 5),
         auto_backup=get_setting(db, "auto_backup", "1") == "1",
         dashboard_widgets=widgets,
+        outlook_sync=get_setting(db, "outlook_sync", "aus") or "aus",
+        outlook_last_sync=datetime.fromisoformat(last) if (last := get_setting(db, "outlook_last_sync", "")) else None,
+        outlook_last_result=get_setting(db, "outlook_last_result", ""),
     )
 
 

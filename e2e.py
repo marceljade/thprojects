@@ -14,7 +14,8 @@ from pathlib import Path
 import httpx
 from playwright.sync_api import sync_playwright, expect
 
-BASE = "http://127.0.0.1:8765"
+# Anderer Port, wenn auf 8765 die echte App läuft: PMTH_BASE=http://127.0.0.1:8766
+BASE = os.environ.get("PMTH_BASE", "http://127.0.0.1:8765")
 # Eigenes Chromium (z. B. wenn der Download von playwright install nicht geht): PMTH_CHROMIUM=<Pfad zur chrome-Binary>
 LAUNCH = {"executable_path": os.environ["PMTH_CHROMIUM"]} if os.environ.get("PMTH_CHROMIUM") else {}
 OUT = Path(__file__).resolve().parent / "shots"

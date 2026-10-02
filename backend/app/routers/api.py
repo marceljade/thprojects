@@ -4,14 +4,14 @@ from __future__ import annotations
 import platform
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import config, models, schemas
 from ..database import get_db
-from ..services import admin, common, dashboard, notes, projects, tasks, views
+from ..services import admin, common, dashboard, notes, projects, tasks, views, outlook
 
 router = APIRouter(prefix="/api")
 
@@ -310,6 +310,22 @@ def export_csv(what: str = "tasks", db: Session = Depends(get_db)):
     name = f"{'Projekte' if what == 'projects' else 'Aufgaben'}_{datetime.now().strftime('%Y-%m-%d')}.csv"
     return Response(content="﻿" + text, media_type="text/csv; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+@router.post("/outlook/sync", response_model=schemas.OutlookSyncOut)
+def outlook_sync(db: Session = Depends(get_db)):
+    try:
+        return outlook.run_sync(db, manual=True)
+    except outlook.OutlookError as e:
+        raise HTTPException(503, str(e))
+
+
+@router.post("/outlook/clear", response_model=schemas.OutlookSyncOut)
+def outlook_clear(db: Session = Depends(get_db)):
+    try:
+        return outlook.clear(db)
+    except outlook.OutlookError as e:
+        raise HTTPException(503, str(e))
 
 
 @router.get("/backups", response_model=list[schemas.BackupOut])

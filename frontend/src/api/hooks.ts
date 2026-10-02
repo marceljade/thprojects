@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, qs } from './client'
-import type { Activity, Backup, CalendarDay, Dashboard, Holiday, Meta, Note, Notification, Project, ProjectDetail, Schedule, SearchResult, Settings, Task, TaskType, Template, TemplatePreviewRow, User } from './types'
+import type { Activity, Backup, CalendarDay, Dashboard, Holiday, Meta, Note, Notification, OutlookSyncResult, Project, ProjectDetail, Schedule, SearchResult, Settings, Task, TaskType, Template, TemplatePreviewRow, User } from './types'
 
 export const keys = {
   meta: ['meta'] as const,
@@ -83,4 +83,6 @@ export const useDeleteTaskType = () => useMut((id: number) => api.del(`/api/task
 export const useAddHoliday = () => useMut((data: { date: string; name: string }) => api.post<Holiday>('/api/holidays', data))
 export const useDeleteHoliday = () => useMut((id: number) => api.del(`/api/holidays/${id}`))
 export const useSaveSettings = () => useMut((data: Record<string, unknown>) => api.put<Settings>('/api/settings', data))
+export const useOutlookSync = () => useMut(() => api.post<OutlookSyncResult>('/api/outlook/sync'))
+export const useOutlookClear = () => useMut(() => api.post<OutlookSyncResult>('/api/outlook/clear'))
 export const useCreateBackup = () => useMut(() => api.post<Backup>('/api/backups'))

@@ -116,7 +116,7 @@ def seed(db: Session) -> None:
             set_setting(db, "my_user_id", str(mc.id))
     if not get_setting(db, "base_path"):
         set_setting(db, "base_path", r"\\NAS\Netzwerk\TH-Ingenieure\projektbezogene Daten")
-    for k, v in (("warn_workdays", "3"), ("warn_project_workdays", "5"), ("auto_backup", "1")):
+    for k, v in (("warn_workdays", "3"), ("warn_project_workdays", "5"), ("auto_backup", "1"), ("outlook_sync", "aus")):
         if not get_setting(db, k):
             set_setting(db, k, v)
     db.commit()

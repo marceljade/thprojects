@@ -67,6 +67,7 @@ export interface Holiday { id: number; date: string; name: string }
 export interface Settings {
   my_user_id: number | null; my_user_code: string | null; base_path: string
   warn_workdays: number; warn_project_workdays: number; auto_backup: boolean
+  outlook_sync: 'aus' | 'manuell' | 'automatisch'; outlook_last_sync: string | null; outlook_last_result: string
   dashboard_widgets: Record<string, boolean>
 }
 
@@ -98,3 +99,4 @@ export interface ScheduleTask { id: number; title: string; status: TaskStatus; d
 export interface ScheduleProject { id: number; project_number: string; name: string; signal: Signal; deadline: string | null; progress: number; tasks: ScheduleTask[] }
 export interface Schedule { start: string; end: string; today: string; projects: ScheduleProject[]; holidays: Holiday[] }
 export interface Backup { file: string; size_bytes: number; created_at: string }
+export interface OutlookSyncResult { created: number; updated: number; removed: number; total: number; at: string; message: string }

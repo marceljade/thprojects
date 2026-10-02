@@ -23,9 +23,9 @@ backend/app/
   scheduling.py    DIE EINZIGE STELLE für Arbeitstage, Fälligkeit, Fortschritt, Ampel, Warnungen, Vorlagenfristen
   migrate.py       Schema-Abgleich beim Start (nur ADD COLUMN / CREATE TABLE, nie löschen)
   seed.py          Grunddaten beim ersten Start (Bearbeiter, Aufgabenarten, Vorlagen, Feiertage, Einstellungen)
-  services/        common (Settings, Protokoll, Serialisierung), projects, tasks, notes, folders, dashboard, views (Kalender/Zeitplan/Suche), admin (Vorlagen, Bearbeiter, Export, Backup)
+  services/        common (Settings, Protokoll, Serialisierung), projects, tasks, notes, folders, dashboard, views (Kalender/Zeitplan/Suche), admin (Vorlagen, Bearbeiter, Export, Backup), outlook (Soll-Termine, Abgleich, pywin32-Adapter)
   routers/api.py   alle Routen, keine Logik
-backend/tests/     pytest (scheduling + API-Ablauf + Ordner + Migration + Runden/Folgeauftrag)
+backend/tests/     pytest (scheduling + API-Ablauf + Ordner + Migration + Runden/Folgeauftrag + Outlook mit Fake-Kalender)
 frontend/src/
   api/             client.ts, types.ts (Spiegel der DTOs), hooks.ts (TanStack Query, nach jeder Mutation invalidateQueries)
   lib/format.ts    Datum/KW/Labels/Farbklassen
@@ -48,6 +48,7 @@ README.md          Nutzerdoku, Logik, Update-Anleitung
 9. Design: ruhig, viel Weißraum, eine Akzentfarbe (Petrol), Semantikfarben nur für Fälligkeit und Ampel. Keine Excel-Optik, keine bunten Karten, keine Animationen ohne Anlass. Tokens in `index.css`, Komponentenklassen `.card .btn-* .input .chip`.
 10. Keine neuen Abhängigkeiten ohne Grund. Keine Cloud, keine Anmeldung.
 11. Die App verändert auf dem NAS nichts (kein Anlegen, Umbenennen, Verschieben, Löschen, keine Dateien schreiben). Erlaubt ist nur Lesen: vorhandenen Ordner per Projektnummer finden und öffnen. Ordner legt der Nutzer selbst an und benennt sie selbst um.
+12. Outlook nur einweg und nur im eigenen Ordner: Die App schreibt, ändert und löscht ausschließlich im Kalenderordner „Projektfristen" unter dem Standardkalender und dort nur Termine mit der UserProperty `pmth_id`. Hauptkalender, andere Ordner und fremde Termine im Ordner werden nie angefasst. Die App liest keine Outlook-Termine zurück.
 
 ## Fachliche Entscheidungen (nicht neu diskutieren)
 
@@ -66,6 +67,7 @@ README.md          Nutzerdoku, Logik, Update-Anleitung
 - Kalender: Standard Monat, Ansicht in localStorage (`calendar_view`). Monat und Woche füllen die Höhe des Viewports, Sa/So in der Woche nur breit, wenn dort Aufgaben liegen.
 - `.page` ist volle Breite mit 20 px Rand, `.page-narrow` (1240 px) nur für Formularseiten wie Einstellungen. Sidebar unter 1400 px standardmäßig eingeklappt (Laptop 1366 startet eingeklappt).
 - Datumsfelder sind `DateInput` (ui/index.tsx): tippen, Kalender oder Einfügen aus der Zwischenablage (`parsePastedDate` in format.ts: TT.MM.JJJJ, TT.MM.JJ, TT.MM., ISO). Kein nacktes `<input type="date">` mehr.
+- Outlook: `services/outlook.py`. `desired_events(projects, tasks)` reine Soll-Liste aus den DTOs (offene Aufgaben mit Frist der aktuellen Runde, Projektfristen aktiver Projekte, hoch/kritisch = rote Kategorie), `sync_calendar(cal, desired)` reiner idempotenter Abgleich gegen `CalendarPort` (im Test `FakeCalendar`), `OutlookCalendar` der pywin32-Adapter mit Import erst in den Methoden. Ganztägig, Frei, keine Erinnerung, Betreff `<Nr> <Name>: <Aufgabe|Projektfrist>`. Einstellung `outlook_sync` aus/manuell/automatisch, `outlook_last_sync`, `outlook_last_result`. Automatik über Session-Events (`outlook.register`): before_flush merkt Änderungen an Task/Project/ProjectRound, after_commit startet einen Timer (5 s gebündelt) mit eigener Session, Fehler bleiben im Hintergrund. Protokoll nur bei manuellem Abgleich, Leeren und Fehlern. Routen `POST /outlook/sync`, `POST /outlook/clear`, Fehler als 503 mit Text. pywin32 nur unter Windows in requirements, start.bat installiert fehlende Pakete nach.
 - Kein Excel-Import. Export nach Excel/CSV ja.
 - Ein Nutzer, keine Anmeldung, „Ich bin" in den Einstellungen. Mehrbenutzer später über users + activity_log.user_id.
 
@@ -128,7 +130,6 @@ Zwischendurch nur melden, wenn sich die Richtung ändert oder eine Entscheidung 
 4. Wochenbericht als Export (erledigt / fällig / wartet je Woche)
 5. Rechnungsstatus je Projekt (gestellt, bezahlt) als eigene Felder, wenn Aufgabe „Rechnung" nicht reicht
 6. Zeiterfassung je Aufgabe (Start/Stopp), erst wenn Marcel sie wirklich braucht
-7. Outlook: Aufgabe als Termin anlegen (ICS-Download reicht als erster Schritt)
-8. Netzwerkbetrieb mit mehreren Nutzern: Anmeldung, `PMTH_HOST=0.0.0.0`, PostgreSQL
+7. Netzwerkbetrieb mit mehreren Nutzern: Anmeldung, `PMTH_HOST=0.0.0.0`, PostgreSQL
 
-Erledigt und nicht mehr offen: Excel-System (VBA, separates Paket), Web-App v1.0 mit Dashboard, Aufgaben, Projekten, Kalender, Zeitplan, Aktivitäten, Einstellungen, Export, Backup, Projektordner finden und öffnen (nur lesend), Schema-Migration. Pfad einfügen im Projektformular. Datum einfügen in Datumsfelder. Ordner-Automatik (anlegen, umbenennen, abgleichen) wieder ausgebaut, Invariante 11. Folgeaufträge als Runden im selben Projekt. Verdichtung für Laptop 1366×768 (volle Breite, vier Dashboard-Bereiche, Kalender füllt die Höhe, e2e-Screenshots bei 1366×768).
+Erledigt und nicht mehr offen: Excel-System (VBA, separates Paket), Web-App v1.0 mit Dashboard, Aufgaben, Projekten, Kalender, Zeitplan, Aktivitäten, Einstellungen, Export, Backup, Projektordner finden und öffnen (nur lesend), Schema-Migration. Pfad einfügen im Projektformular. Datum einfügen in Datumsfelder. Ordner-Automatik (anlegen, umbenennen, abgleichen) wieder ausgebaut, Invariante 11. Folgeaufträge als Runden im selben Projekt. Outlook-Kalender „Projektfristen" (einweg, Invariante 12). Verdichtung für Laptop 1366×768 (volle Breite, vier Dashboard-Bereiche, Kalender füllt die Höhe, e2e-Screenshots bei 1366×768).
