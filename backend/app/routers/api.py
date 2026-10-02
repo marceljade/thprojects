@@ -63,6 +63,11 @@ def create_project(data: schemas.ProjectCreate, db: Session = Depends(get_db)):
     return projects.create_project(db, data)
 
 
+@router.get("/projects/folder-lookup")
+def folder_lookup(project_number: str = "", status: str = "anfrage", name: str = "", db: Session = Depends(get_db)):
+    return projects.folder_lookup(db, project_number, status, name)
+
+
 @router.get("/projects/{project_id}", response_model=schemas.ProjectDetail)
 def get_project(project_id: int, db: Session = Depends(get_db)):
     return projects.get_project(db, project_id)

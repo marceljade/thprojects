@@ -47,6 +47,7 @@ README.md          Nutzerdoku, Logik, Update-Anleitung
 8. Fehlermeldungen sagen, was passiert ist und was zu tun ist, in der Stimme der App, ohne Entschuldigung. Leere Zustände laden zum Handeln ein.
 9. Design: ruhig, viel Weißraum, eine Akzentfarbe (Petrol), Semantikfarben nur für Fälligkeit und Ampel. Keine Excel-Optik, keine bunten Karten, keine Animationen ohne Anlass. Tokens in `index.css`, Komponentenklassen `.card .btn-* .input .chip`.
 10. Keine neuen Abhängigkeiten ohne Grund. Keine Cloud, keine Anmeldung.
+11. Die App verändert auf dem NAS nichts (kein Anlegen, Umbenennen, Verschieben, Löschen, keine Dateien schreiben). Erlaubt ist nur Lesen: vorhandenen Ordner per Projektnummer finden und öffnen. Ordner legt der Nutzer selbst an und benennt sie selbst um.
 
 ## Fachliche Entscheidungen (nicht neu diskutieren)
 
@@ -56,7 +57,7 @@ README.md          Nutzerdoku, Logik, Update-Anleitung
 - Aufgabenstatus: nicht_begonnen, geplant, in_bearbeitung, wartet (mit waiting_for / waiting_on / waiting_since / reminder_date), erledigt, entfaellt.
 - Projektfrist = target_deadline oder order_date + offered_weeks · 7 (Kalendertage, vertraglich). Aufgabenfristen aus Vorlagen = Projektfrist minus Offset in Arbeitstagen, Feiertagstabelle, bei zu kurzer Restzeit proportional gestaucht.
 - Fortschritt gewichtet über Aufgaben außer entfaellt, Gewicht aus Aufgabenart.
-- Projektordner `<Basispfad>\20JJ\<Nr> <Anfrage|Auftrag> <Name>`. Phase Anfrage für anfrage/angebot, Auftrag ab beauftragt. Die App liest nur: vorhandenen Ordner suchen (`find_folder`), Pfad erkennen, Ordner öffnen. Sie legt nie Ordner an und benennt nie um, der Ablageort ist das NAS (Entscheidung 01.10.2026, nicht wieder einbauen).
+- Projektordner: erwarteter Name `<Basispfad>\20JJ\<Nr> <Anfrage|Auftrag> <Name>`, Phase Anfrage für anfrage/angebot, Auftrag ab beauftragt. Die App vergleicht nur und zeigt Abweichungen an (`folders.folder_hint`: nicht gefunden, Phase weicht ab, Name weicht ab, mit Knopf „Erwarteten Namen kopieren"). Finden per `find_folder` beim Anlegen und beim Öffnen der Projektseite, gefundener Pfad wird gemerkt und protokolliert. Siehe Invariante 11.
 - Auftragsdatum eingetragen → Status springt von anfrage/angebot auf beauftragt.
 - Pfad im Feld Projektordner (Neues Projekt) → `folders.parse_folder_path` / `parseFolderPath` füllen Nummer, Name, Status (Anfrage → anfrage, Auftrag → beauftragt) nur in leere Felder, Status gilt als leer solange anfrage. Rückmeldung per Toast.
 - Dashboard hat genau vier Bereiche: Heute (überfällig + heute + rote Projekte mit reasons), Als Nächstes, Aktive Projekte (sortiert rot → gelb → grün, dann Frist, zweite Zeile mit reasons/warnings bei gelb/rot), Wartet auf Rückmeldung. „Zuletzt" nur, wenn darunter Platz im Viewport ist. Leere Bereiche sind eine Textzeile ohne Kasten. Schalter in dashboard_widgets: heute, upcoming, active_projects, waiting, activity (alte Schlüssel attention/projects werden ignoriert).
@@ -114,7 +115,8 @@ Zwischendurch nur melden, wenn sich die Richtung ändert oder eine Entscheidung 
 - Keine UserForms-Logik, kein Excel-Nachbau, keine Tabellen mit 20 Spalten als Hauptansicht.
 - Keine Features, die nicht aus einer der fünf Morgenfragen oben folgen, ohne Rückfrage.
 - Keine Priorisierung „erfinden", die nicht aus Fristen, Status oder Priorität folgt. Jede Hervorhebung trägt ihren Grund als Text (`reasons`, `warnings`).
-- Keine stillen Datenänderungen: jede Automatik (Statussprung, Fristen stauchen) ist im Protokoll oder in einer Rückmeldung sichtbar. Keine Schreibzugriffe auf das Dateisystem außerhalb von `backend/data`.
+- Keine stillen Datenänderungen: jede Automatik (Statussprung, Fristen stauchen) ist im Protokoll oder in einer Rückmeldung sichtbar.
+- Kein `mkdir`, `makedirs`, `rename`, `replace`, `move`, `rmtree`, `unlink` und kein schreibendes `open()` unterhalb von `base_path`. Schreibzugriffe auf das Dateisystem nur in `backend/data` (Datenbank, Sicherungen) und in vom Nutzer gewählte Exportdateien.
 - Keine Semikolons in deutschen UI-Texten, keine Großschreibung ganzer Wörter, keine „→"-Anhängsel an Buttons.
 
 ## Backlog (Reihenfolge = Vorschlag, Nutzer entscheidet)
@@ -128,4 +130,4 @@ Zwischendurch nur melden, wenn sich die Richtung ändert oder eine Entscheidung 
 7. Outlook: Aufgabe als Termin anlegen (ICS-Download reicht als erster Schritt)
 8. Netzwerkbetrieb mit mehreren Nutzern: Anmeldung, `PMTH_HOST=0.0.0.0`, PostgreSQL
 
-Erledigt und nicht mehr offen: Excel-System (VBA, separates Paket), Web-App v1.0 mit Dashboard, Aufgaben, Projekten, Kalender, Zeitplan, Aktivitäten, Einstellungen, Export, Backup, Projektordner-Automatik, Schema-Migration. Pfad einfügen im Projektformular. Datum einfügen in Datumsfelder. Ordner-Automatik (anlegen, umbenennen, abgleichen) wieder ausgebaut. Verdichtung für Laptop 1366×768 (volle Breite, vier Dashboard-Bereiche, Kalender füllt die Höhe, e2e-Screenshots bei 1366×768).
+Erledigt und nicht mehr offen: Excel-System (VBA, separates Paket), Web-App v1.0 mit Dashboard, Aufgaben, Projekten, Kalender, Zeitplan, Aktivitäten, Einstellungen, Export, Backup, Projektordner finden und öffnen (nur lesend), Schema-Migration. Pfad einfügen im Projektformular. Datum einfügen in Datumsfelder. Ordner-Automatik (anlegen, umbenennen, abgleichen) wieder ausgebaut, Invariante 11. Verdichtung für Laptop 1366×768 (volle Breite, vier Dashboard-Bereiche, Kalender füllt die Höhe, e2e-Screenshots bei 1366×768).

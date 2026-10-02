@@ -90,7 +90,8 @@ with sync_playwright() as pw:
     page.wait_for_timeout(600)
     shot(page, "02_dashboard_abgehakt")
 
-    # Neues Projekt über das Formular (Tastenkürzel p)
+    # Neues Projekt über das Formular (Tastenkürzel p). Der Ordner liegt schon auf dem "NAS", die App legt nie einen an
+    (NAS / "2026" / "26-315 Auftrag WP Moorriem – Vermessung 3x E-160").mkdir()
     page.keyboard.press("p")
     expect(page.get_by_role("dialog")).to_be_visible()
     page.get_by_placeholder("26-234").fill("26-315")
@@ -104,13 +105,19 @@ with sync_playwright() as pw:
     expect(page.get_by_text("WP Moorriem")).to_be_visible()
     page.wait_for_timeout(600)
     shot(page, "04_projektseite")
-    # Die App legt keine Ordner an und benennt keine um, auch nicht beim Phasenwechsel
-    assert list((NAS / "2026").iterdir()) == [], list((NAS / "2026").iterdir())
+    # Vorhandener Ordner wurde übernommen. Nach dem Phasenwechsel bleibt er wie er ist, die App zeigt nur den Hinweis
+    ordner = page.locator("section", has_text="Projektordner").first
+    expect(ordner).to_contain_text("26-315 Auftrag WP Moorriem")
     page.locator("select").nth(0).select_option("anfrage")
     page.wait_for_timeout(800)
+    assert [e.name for e in (NAS / "2026").iterdir()] == ["26-315 Auftrag WP Moorriem – Vermessung 3x E-160"]
+    expect(ordner).to_contain_text("Ordner heißt noch Auftrag. Benenne ihn auf dem NAS in Anfrage um.")
+    expect(page.get_by_role("button", name="Erwarteten Namen kopieren")).to_be_visible()
+    shot(page, "04b_ordner_hinweis")
     page.locator("select").nth(0).select_option("in_bearbeitung")
     page.wait_for_timeout(800)
-    assert list((NAS / "2026").iterdir()) == [], list((NAS / "2026").iterdir())
+    assert [e.name for e in (NAS / "2026").iterdir()] == ["26-315 Auftrag WP Moorriem – Vermessung 3x E-160"]
+    expect(ordner).not_to_contain_text("Ordner heißt noch")
 
     # Aufgabe öffnen und Frist verschieben
     page.get_by_text("Messung durchführen").first.click()
