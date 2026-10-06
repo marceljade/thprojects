@@ -169,6 +169,10 @@ def update_settings(db: Session, data: SettingsIn) -> SettingsOut:
         common.set_setting(db, "my_user_id", str(data.my_user_id))
     if data.base_path is not None:
         common.set_setting(db, "base_path", data.base_path.strip())
+        from . import nas_guard
+        nas_guard.set_base(data.base_path)
+        from . import nas_guard
+        nas_guard.set_base(data.base_path)
     if data.warn_workdays is not None:
         common.set_setting(db, "warn_workdays", str(data.warn_workdays))
     if data.warn_project_workdays is not None:

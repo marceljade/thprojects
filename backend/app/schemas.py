@@ -390,6 +390,8 @@ class SettingsOut(BaseModel):
     outlook_sync: str                    # aus | manuell | automatisch
     outlook_last_sync: datetime | None
     outlook_last_result: str
+    nas_write_guard: bool                # Schreibschutz für den Basispfad aktiv
+    nas_write_guard: bool                # Schreibschutz für den Basispfad aktiv
 
 
 class SettingsIn(BaseModel):

@@ -69,7 +69,7 @@ Die App kann ihre Fristen in einen eigenen Outlook-Kalender schreiben. Einweg: A
 
 ## Projektordner
 
-Die App verändert auf dem NAS nichts. Sie legt keine Ordner an, benennt keine um, verschiebt und löscht nichts. Sie liest nur: den Ordner zur Projektnummer finden und öffnen. Ordner legst du selbst an und benennst sie selbst um.
+Die App verändert auf dem NAS nichts. Sie legt keine Ordner an, benennt keine um, verschiebt und löscht nichts. Sie liest nur: den Ordner zur Projektnummer finden und öffnen. Ordner legst du selbst an und benennst sie selbst um. Das ist technisch abgesichert: Sobald ein Basispfad gesetzt ist, blockt ein Schreibschutz im Server jeden schreibenden Dateizugriff unterhalb dieses Pfads, egal aus welchem Teil der App, mit einer klaren Meldung. In den Einstellungen steht dann „Schreibschutz aktiv".
 
 Erwarteter Name: `<Basispfad>\20JJ\<Projektnr> <Anfrage|Auftrag> <Projektname>`, zum Beispiel `…\2024\24-019 Auftrag Schall Schatten WP Neuscharrel, LK Cloppenburg`. „Anfrage" bei Status Anfrage und Angebot erstellt, „Auftrag" ab Beauftragt.
 

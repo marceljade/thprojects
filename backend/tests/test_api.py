@@ -1,6 +1,10 @@
 import pytest
 from datetime import date, timedelta
 
+from app.services import nas_guard
+
+from app.services import nas_guard
+
 def test_flow(client):
     meta = client.get("/api/meta").json()
     assert meta["settings"]["my_user_code"] == "MC"
@@ -142,13 +146,15 @@ def test_folders(client, tmp_path):
     assert client.post(f"/api/projects/{r['id']}/sync-folder").status_code in (404, 405)
 
     # Nutzer legt den Ordner später selbst an: beim nächsten Öffnen wird er übernommen
-    (base / "2026" / "26-401 Anfrage WP Test Nord Süd").mkdir()
+    with nas_guard.as_user():
+        (base / "2026" / "26-401 Anfrage WP Test Nord Süd").mkdir()
     r = client.get(f"/api/projects/{r['id']}").json()
     assert r["folder_path"].endswith("26-401 Anfrage WP Test Nord Süd") and "übernommen" in r["folder_note"]
     assert any(e["action"] == "Projektordner übernommen" for e in client.get("/api/activity").json())
 
     # Nutzer benennt auf dem NAS um: beim nächsten Öffnen wird der neue Name gefunden
-    (base / "2026" / "26-401 Anfrage WP Test Nord Süd").rename(base / "2026" / "26-401 Auftrag WP Test Nord Süd")
+    with nas_guard.as_user():
+        (base / "2026" / "26-401 Anfrage WP Test Nord Süd").rename(base / "2026" / "26-401 Auftrag WP Test Nord Süd")
     r = client.get(f"/api/projects/{r['id']}").json()
     assert r["folder_path"].endswith("26-401 Auftrag WP Test Nord Süd")
 

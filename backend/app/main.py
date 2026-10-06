@@ -11,13 +11,15 @@ from . import config, database
 from .routers.api import router
 from .migrate import migrate
 from .seed import seed
-from .services import outlook
+from .services import nas_guard, outlook
 from .services.admin import daily_backup_if_due
 
 
 def create_app(database_url: str | None = None, serve_static: bool = True) -> FastAPI:
     config.ensure_dirs()
     database.init_engine(database_url)
+    nas_guard.install()   # Schreibschutz für den NAS-Basispfad, Invariante 11
+    nas_guard.install()   # Schreibschutz für den NAS-Basispfad, Invariante 11
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -28,6 +30,8 @@ def create_app(database_url: str | None = None, serve_static: bool = True) -> Fa
         outlook.register(database.SessionLocal)
         with database.SessionLocal() as db:
             seed(db)
+            from .services.common import get_setting
+            nas_guard.set_base(get_setting(db, "base_path", ""))
             daily_backup_if_due(db)
             outlook.start_auto_on_boot(db)
         yield
@@ -38,6 +42,14 @@ def create_app(database_url: str | None = None, serve_static: bool = True) -> Fa
     @app.exception_handler(HTTPException)
     async def _http_error(_request: Request, exc: HTTPException):
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+    @app.exception_handler(nas_guard.NasWriteBlocked)
+    async def _nas_blocked(_request: Request, exc: nas_guard.NasWriteBlocked):
+        return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+    @app.exception_handler(nas_guard.NasWriteBlocked)
+    async def _nas_blocked(_request: Request, exc: nas_guard.NasWriteBlocked):
+        return JSONResponse(status_code=403, content={"detail": str(exc)})
 
     if serve_static and config.STATIC_DIR.is_dir():
         assets = config.STATIC_DIR / "assets"

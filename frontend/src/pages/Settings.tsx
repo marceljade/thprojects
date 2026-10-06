@@ -34,7 +34,7 @@ export default function Settings() {
             <Field label="Ich bin" hint="bestimmt „Meine Aufgaben“ und den Standard-Bearbeiter">
               <Select value={s.my_user_id} onChange={(v) => { setS({ ...s, my_user_id: v }); persist({ my_user_id: Number(v) }) }} options={(meta?.users ?? []).map((u) => ({ value: u.id, label: u.name ? `${u.code} – ${u.name}` : u.code }))} />
             </Field>
-            <Field label="Basispfad der Projektordner" hint={<>Ordner heißen <span className="text-ink">{'<Nr> <Anfrage|Auftrag> <Projektname>'}</span> im Jahresordner, z. B. 2026\26-301 Auftrag WP Testfeld. Die App sucht und öffnet Ordner nur, sie legt keine an und benennt keine um.</>}>
+            <Field label="Basispfad der Projektordner" hint={<>Ordner heißen <span className="text-ink">{'<Nr> <Anfrage|Auftrag> <Projektname>'}</span> im Jahresordner, z. B. 2026\26-301 Auftrag WP Testfeld. Die App sucht und öffnet Ordner nur, sie legt keine an und benennt keine um.{meta?.settings.nas_write_guard ? <> <span className="text-ink">Schreibschutz aktiv:</span> jeder Schreibzugriff unterhalb dieses Pfads wird technisch geblockt.</> : ''}</>}>
               <input className="input" value={s.base_path} onChange={(e) => setS({ ...s, base_path: e.target.value })} onBlur={() => persist({ base_path: s.base_path })} />
             </Field>
             <div className="grid grid-cols-2 gap-3">

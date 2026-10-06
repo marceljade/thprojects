@@ -47,7 +47,13 @@ def settings_out(db: Session) -> SettingsOut:
         outlook_sync=get_setting(db, "outlook_sync", "aus") or "aus",
         outlook_last_sync=datetime.fromisoformat(last) if (last := get_setting(db, "outlook_last_sync", "")) else None,
         outlook_last_result=get_setting(db, "outlook_last_result", ""),
+        nas_write_guard=_nas_guard_active(),
     )
+
+
+def _nas_guard_active() -> bool:
+    from . import nas_guard
+    return nas_guard.active()
 
 
 def my_user(db: Session) -> models.User | None:

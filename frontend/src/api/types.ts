@@ -70,6 +70,8 @@ export interface Settings {
   my_user_id: number | null; my_user_code: string | null; base_path: string
   warn_workdays: number; warn_project_workdays: number; auto_backup: boolean
   outlook_sync: 'aus' | 'manuell' | 'automatisch'; outlook_last_sync: string | null; outlook_last_result: string
+  nas_write_guard: boolean
+  nas_write_guard: boolean
   dashboard_widgets: Record<string, boolean>
 }
 
